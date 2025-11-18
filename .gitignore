@@ -1,0 +1,10 @@
+*~
+*.a
+*.o
+*.so
+bin/*
+test/*uv.rbin
+current/
+src/.o.mpi/
+src/.o.serial/
+argtable2*
