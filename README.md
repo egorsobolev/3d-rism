@@ -24,3 +24,8 @@ make test
 ## Examples
 
 See the test suite for usage examples.
+
+## Dynamic Linking and GPL Compliance
+
+This project uses FFTW3 (GPL-licensed), linked dynamically.  
+The project itself is licensed under MIT.
