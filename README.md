@@ -17,7 +17,7 @@ DOI: [10.1021/jp971083h](https://pubs.acs.org/doi/10.1021/jp971083h)
 ### Download & Build
 
 ```sh
-git clone git@github.com:egorsobolev/3d-rism.git
+git clone --recurse-submodules git@github.com:egorsobolev/3d-rism.git
 cd 3d-rism
 make
 make test
