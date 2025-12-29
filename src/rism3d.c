@@ -59,8 +59,8 @@ int main(int argc, char **argv)
 	struct arg_dbl *ath = arg_dbl0(NULL, "ath", NULL, "parameter for coarsening asymptotics (default: 1e-7)");
 	/*struct arg_file *pfile = arg_file0("p", NULL, NULL, "file with/for prepared equation data");*/
 	struct arg_int *iso	= arg_intn("l", NULL, NULL, 0, 10, "isosurface level in percent of maximum (up to 10 levels)");
-    struct arg_lit *help  = arg_lit0(NULL, "help", "print this help and exit");
-    struct arg_lit *vers  = arg_lit0(NULL, "version", "print version information and exit");
+	struct arg_lit *help  = arg_lit0(NULL, "help", "print this help and exit");
+	struct arg_lit *vers  = arg_lit0(NULL, "version", "print version information and exit");
 	struct arg_file *rtxt = arg_file1(NULL, NULL, "<molecule>", NULL);
 	struct arg_end *end = arg_end(20);
 	void *argtable[] = {
@@ -76,8 +76,8 @@ int main(int argc, char **argv)
 		end
 	};
 	const char* progname = "rism3d";
-    int exitcode=0;
-    int nerrors; 
+	int exitcode=0;
+	int nerrors; 
 	mol_t m;
 	water_t w;
 	double gsp[3], mrg[3];
@@ -98,14 +98,14 @@ int main(int argc, char **argv)
 
 	int nit, flag, nprefix;
 
-    if (arg_nullcheck(argtable) != 0)
-        {
-        /* NULL entries were detected, some allocations must have failed */
-        printf("%s: insufficient memory\n", progname);
-        exitcode = 1;
-        goto exit1;
+	if (arg_nullcheck(argtable) != 0)
+	{
+		/* NULL entries were detected, some allocations must have failed */
+		printf("%s: insufficient memory\n", progname);
+		exitcode = 1;
+		goto exit1;
 	}
-    /* set any command line default values prior to parsing */
+	/* set any command line default values prior to parsing */
 	closure->sval[0] = "PLHNC";
 	prec->dval[0] = 1e-5;
 	mxit->ival[0] = 300;
@@ -114,32 +114,32 @@ int main(int argc, char **argv)
 	ljcut->dval[0] = 10.0;
 	ccut->dval[0] = 10.0;
 	thinn->ival[0] = 2;
-        ath->dval[0] = 1e-7;
+	ath->dval[0] = 1e-7;
 
 	/* Parse the command line as defined by argtable[] */
-    nerrors = arg_parse(argc, argv, argtable);
+	nerrors = arg_parse(argc, argv, argtable);
 
-    if (help->count > 0) {
-        printf("Usage: %s", progname);
-        arg_print_syntax(stdout, argtable,"\n");
+	if (help->count > 0) {
+		printf("Usage: %s", progname);
+		arg_print_syntax(stdout, argtable,"\n");
 		printf("Solve 3D-RISM equations.\n\n");
-        arg_print_glossary(stdout, argtable,"  %-20s %s\n");
-        exitcode = 0;
-        goto exit1;
+		arg_print_glossary(stdout, argtable,"  %-20s %s\n");
+		exitcode = 0;
+		goto exit1;
 	}
-    /* special case: '--version' takes precedence error reporting */
-    if (vers->count > 0){
-        printf("March 2011, Egor Sobolev\n");
-        exitcode = 0;
-        goto exit1;
+	/* special case: '--version' takes precedence error reporting */
+	if (vers->count > 0){
+		printf("March 2011, Egor Sobolev\n");
+		exitcode = 0;
+		goto exit1;
 	}
-    /* If the parser returned any errors then display them and exit */
-    if (nerrors > 0) {
-        /* Display the error details contained in the arg_end struct.*/
-        arg_print_errors(stdout, end, progname);
-        printf("Try '%s --help' for more information.\n", progname);
-        exitcode = 1;
-        goto exit1;
+	/* If the parser returned any errors then display them and exit */
+	if (nerrors > 0) {
+		/* Display the error details contained in the arg_end struct.*/
+		arg_print_errors(stdout, end, progname);
+		printf("Try '%s --help' for more information.\n", progname);
+		exitcode = 1;
+		goto exit1;
 	}
 
 	nprefix = (int) (rtxt->extension[0] - rtxt->basename[0]);
@@ -161,13 +161,13 @@ int main(int argc, char **argv)
 	if (thx->count) spd[0] = thx->ival[0];
 	if (thy->count) spd[1] = thy->ival[0];
 	if (thz->count) spd[2] = thz->ival[0];
-   
-        th = ath->dval[0];
+
+	th = ath->dval[0];
 
 	if ((spd[0] * spd[1] * spd[2]) < 1) {
 		printf("%s: invalid values of parameters for thinning Coloumb grid.\n", progname);
-        exitcode = 1;
-        goto exit1;
+		exitcode = 1;
+		goto exit1;
 	}
 
 	if (!strcasecmp((char *) closure->sval[0], "HNC")) {
@@ -179,10 +179,10 @@ int main(int argc, char **argv)
 		closure_c = &plhnc_c;
 		musc = &musc_plhnc;
 	} else {
-        printf("Unknown closure.\n");
-        printf("Try '%s --help' for more information.\n", progname);
-        exitcode = 0;
-        goto exit1;
+		printf("Unknown closure.\n");
+		printf("Try '%s --help' for more information.\n", progname);
+		exitcode = 0;
+		goto exit1;
 	}
 
 	if (molread(rtxt->filename[0], &m)) {
@@ -372,7 +372,7 @@ int main(int argc, char **argv)
 	closure_c(g.nr * w.natom, eq.rism.uuv, tuv, cuv);
 
 	rmfgrid(&eq.lngr);
-    rmdgrid(&eq.grid);
+	rmdgrid(&eq.grid);
 
 	cblas_daxpy(g.nr * w.natom, 1.0, cuv, 1, tuv, 1);
 

@@ -9,7 +9,7 @@ struct WaterMolecule
 	double eps;
 	double r_hh;
 	double r_oh;
-    double A_oo;
+	double A_oo;
 	double B_oo;
 	double A_oh;
 	double B_oh;

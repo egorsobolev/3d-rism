@@ -16,11 +16,11 @@ double erfc(double x)
 {
 	double t, z, ans;
 	z = fabs(x);
-    t = 1.0 / (1.0 + 0.5 * z);
+	t = 1.0 / (1.0 + 0.5 * z);
 
-    ans=t*exp(-z*z-1.26551223+t*(1.00002368+t*(0.37409196+t*(0.09678418+
-		t*(-0.18628806+t*(0.27886807+t*(-1.13520398+t*(1.48851587+
-		t*(-0.82215223+t*0.17087277)))))))));
+	ans = t*exp(-z*z-1.26551223+t*(1.00002368+t*(0.37409196+t*(0.09678418+
+	     t*(-0.18628806+t*(0.27886807+t*(-1.13520398+t*(1.48851587+
+	     t*(-0.82215223+t*0.17087277)))))))));
 
 	return x >= 0.0 ? ans : 2.0-ans;
 }
@@ -28,10 +28,10 @@ double erfc(double x)
 
 void vec_sincos(size_t n, const double *x, double *s, double *c)
 {
-    for (size_t i = 0; i < n; ++i) {
-      s[i] = sin(x[i]);
-      c[i] = cos(x[i]);
-    }
+	for (size_t i = 0; i < n; ++i) {
+		s[i] = sin(x[i]);
+		c[i] = cos(x[i]);
+	}
 }
 
 void asympr(const grid_t *g, const water_t *w, const mol_t *m, const double *u, double th, double *asympcr, double *asymphr)
@@ -113,7 +113,7 @@ void asympr(const grid_t *g, const water_t *w, const mol_t *m, const double *u, 
 						asymphr[k] += casymphr * m->q[i];
 					} else {
 						q_r = m->q[i] / ra;
-					    d = exp(-xappa * ra);
+						d = exp(-xappa * ra);
 						rs = ra / smear;
 
 						asympcr[k] += q_r * (1.0 - erfc(rs));

@@ -99,7 +99,7 @@ void uljuv(const grid_t *g, const water_t *w, const mol_t *m, double rcut, doubl
 						r2s2 = r2 / s2[l + j];
 						if (r2s2 < RCOR2)
 							r2s2 = RCOR2;
-                        s6r6 = 1.0 / (r2s2 * r2s2 * r2s2);
+						s6r6 = 1.0 / (r2s2 * r2s2 * r2s2);
 
 						u[k] += e[l + j] * s6r6 * (s6r6 - 1.0) - ucut[j];
 						k += g->nr;
