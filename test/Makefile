@@ -8,5 +8,5 @@ pept:
 
 .PHONY: clean
 clean:
-	rm dan_cuv.rbin dan_huv.rbin
-	rm pept_cuv.rbin pept_huv.rbin
+	rm -f dan_cuv.rbin dan_huv.rbin
+	rm -f pept_cuv.rbin pept_huv.rbin
