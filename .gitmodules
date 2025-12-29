@@ -1,0 +1,3 @@
+[submodule "cpocketfft"]
+	path = cpocketfft
+	url = git@github.com:egorsobolev/cpocketfft.git
