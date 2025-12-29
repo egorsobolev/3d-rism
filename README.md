@@ -10,7 +10,9 @@ DOI: [10.1021/jp971083h](https://pubs.acs.org/doi/10.1021/jp971083h)
 ### Dependencies
 
 * [OpenBLAS](https://github.com/OpenMathLib/OpenBLAS)
-* [FFTW3](https://github.com/FFTW/fftw3)
+* [pocketfft](https://gitlab.mpcdf.mpg.de/mtr/pocketfft)
+* [cpocketfft](https://github.com/egorsobolev/cpocketfft)
+* [argtable2](https://argtable.sourceforge.io/)
 
 ### Download & Build
 
@@ -24,8 +26,3 @@ make test
 ## Examples
 
 See the test suite for usage examples.
-
-## Dynamic Linking and GPL Compliance
-
-This project uses FFTW3 (GPL-licensed), linked dynamically.  
-The project itself is licensed under MIT.

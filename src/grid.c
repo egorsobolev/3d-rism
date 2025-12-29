@@ -2,6 +2,7 @@
 #include "utils.h"
 
 #include <stdlib.h>
+#include <string.h>
 
 #define _USE_MATH_DEFINES
 #include <math.h>
@@ -156,15 +157,15 @@ int ginit(const box_t *b, grid_t *g)
 
 int mkdgrid(int n, int *nn, dgrid_t *p)
 {
-    int i;
-    
-    p->n = n;
-    p->nn = calloc(n, sizeof(int));
+	int i;
+
+	p->n = n;
+	p->nn = calloc(n, sizeof(size_t));
 	if (!p->nn)
 		return -1;
-    for (i = 0; i < n; ++i)
-        p->nn[i] = nn[n - i - 1];
-    
+	for (i = 0; i < n; ++i)
+		p->nn[i] = nn[n - i - 1];
+
 	p->b = p->nn[p->n - 1];
 	p->nr = p->b;
 	p->a = 2 * (p->b / 2 + 1);
@@ -175,46 +176,45 @@ int mkdgrid(int n, int *nn, dgrid_t *p)
 	}
 	p->m = p->nk / p->a;
 
-	p->data = (double*) fftw_malloc(sizeof(double) * p->nk);
+	p->data = (double*) malloc(2 * sizeof(double) * p->nk);
 	if (!p->data) {
 		free(p->nn);
 		return -2;
 	}
-	p->fwd = fftw_plan_dft_r2c(p->n, p->nn, p->data, (fftw_complex *) p->data, FFTW_ESTIMATE);
-	if (!p->fwd) {
-		free(p->nn);
-		fftw_free(p->data);
-		return -3;
-	}
-	p->bwd = fftw_plan_dft_c2r(p->n, p->nn, (fftw_complex *) p->data, p->data, FFTW_ESTIMATE);
-	if (!p->bwd) {
-		free(p->nn);
-		fftw_destroy_plan(p->fwd);
-		fftw_free(p->data);
-		return -3;
-	}
+	p->tmp = p->data + p->nk;
 	return 0;
 }
 
 void rmdgrid(dgrid_t *p)
 {
-    fftw_destroy_plan(p->fwd);
-    fftw_destroy_plan(p->bwd);
-    fftw_free(p->data);
+	free(p->data);
 	free(p->nn);
 }
 
+void dgrid_fwd(dgrid_t *p)
+{
+	fft_r2c(p->n, p->nn, p->data, (complex_double *) p->tmp);
+	memcpy(p->data, p->tmp, sizeof(double) * p->nk);
+}
+
+void dgrid_bwd(dgrid_t *p)
+{
+	fft_c2r(p->n, p->nn, (complex_double *) p->data, p->tmp);
+	memcpy(p->data, p->tmp, sizeof(double) * p->nr);
+}
+
+
 int mkfgrid(int n, int *nn, fgrid_t *p)
 {
-    int i;
-    
-    p->n = n;
-    p->nn = calloc(n, sizeof(int));
+	int i;
+
+	p->n = n;
+	p->nn = calloc(n, sizeof(int));
 	if (!p->nn)
 		return -1;
-    for (i = 0; i < n; ++i)
-        p->nn[i] = nn[n - i - 1];
-    
+	for (i = 0; i < n; ++i)
+		p->nn[i] = nn[n - i - 1];
+
 	p->b = p->nn[p->n - 1];
 	p->nr = p->b;
 	p->a = 2 * (p->b / 2 + 1);
@@ -225,31 +225,29 @@ int mkfgrid(int n, int *nn, fgrid_t *p)
 	}
 	p->m = p->nk / p->a;
 
-	p->data = (float*) fftwf_malloc(sizeof(float) * p->nk);
+	p->data = (float*) malloc(2 * sizeof(float) * p->nk);
 	if (!p->data) {
 		free(p->nn);
 		return -3;
 	}
-	p->fwd = fftwf_plan_dft_r2c(p->n, p->nn, p->data, (fftwf_complex *) p->data, FFTW_ESTIMATE);
-	if (!p->fwd) {
-		free(p->nn);
-		fftwf_free(p->data);
-		return -3;
-	}
-	p->bwd = fftwf_plan_dft_c2r(p->n, p->nn, (fftwf_complex *) p->data, p->data, FFTW_ESTIMATE);
-	if (!p->bwd) {
-		free(p->nn);
-		fftwf_destroy_plan(p->fwd);
-		fftwf_free(p->data);
-		return -3;
-	}
+	p->tmp = p->data + p->nk;
 	return 0;
 }
 
 void rmfgrid(fgrid_t *p)
 {
-    fftwf_destroy_plan(p->fwd);
-    fftwf_destroy_plan(p->bwd);
-    fftwf_free(p->data);
+	free(p->data);
 	free(p->nn);
+}
+
+void fgrid_fwd(fgrid_t *p)
+{
+	fftf_r2c(p->n, p->nn, p->data, (complex_float *) p->tmp);
+	memcpy(p->data, p->tmp, sizeof(float) * p->nk);
+}
+
+void fgrid_bwd(fgrid_t *p)
+{
+	fftf_c2r(p->n, p->nn, (complex_float *) p->data, p->tmp);
+	memcpy(p->data, p->tmp, sizeof(float) * p->nr);
 }

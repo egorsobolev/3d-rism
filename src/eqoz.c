@@ -51,6 +51,7 @@ void eqoz(dgrid_t *grid, rism_t *rism, solv_t *solv, closure_t *closure, double 
     
 	n = solv->natv * grid->nr;
     m = solv->natv * grid->nk;
+
     
     r = malloc(n * sizeof(double));
 	t = malloc(m * sizeof(double));
@@ -80,11 +81,10 @@ void eqoz(dgrid_t *grid, rism_t *rism, solv_t *solv, closure_t *closure, double 
             /*memcpy(b, src, eq->p->b * sizeof(float));*/
             cblas_dscal(grid->b, 1.0/grid->nr, src, 1);
             cblas_dcopy(grid->b, src, 1, b, 1);
-            b += grid->a;
+	    b += grid->b;
             src += grid->b;
         }
-
-		fftw_execute(grid->fwd);
+		dgrid_fwd(grid);
 		/*memcpy(dst, eq->p->data, eq->p->nk * sizeof(float));*/
         cblas_dcopy(grid->nk, grid->data, 1, dst, 1);
         cblas_daxpy(grid->nk, -solv->charge[j], rism->asymck, 1, dst, 1);
@@ -155,13 +155,13 @@ void eqoz(dgrid_t *grid, rism_t *rism, solv_t *solv, closure_t *closure, double 
 		/*memcpy(eq->p->data, src, eq->p->nk * sizeof(float));*/
         cblas_dcopy(grid->nk, src, 1, grid->data, 1);
         src += grid->nk;
-		fftw_execute(grid->bwd);
+	dgrid_bwd(grid);
         b = grid->data;
 		for (i = 0; i < grid->m; ++i) {
 			/*for (k = 0; k < eq->p->b; ++k)
 				dst[k] += b[k];*/
             cblas_dcopy(grid->b, b, 1, dst, 1);
-            b += grid->a;
+	    b += grid->b;
             dst += grid->b;
         }
     }
@@ -210,11 +210,11 @@ void Jx(lneq_t *eq, float *x, float *r)
 		for (i = 0; i < eq->grid->m; ++i) {
             /*memcpy(b, src, eq->grid->b * sizeof(float));*/
             cblas_scopy(eq->grid->b,src,1,b,1);
-            b += eq->grid->a;
+	    b += eq->grid->b;
             src += eq->grid->b;
         }
 
-		fftwf_execute(eq->grid->fwd);
+		fgrid_fwd(eq->grid);
 		/*memcpy(dst, eq->grid->data, eq->grid->nk * sizeof(float));*/
         cblas_scopy(eq->grid->nk, eq->grid->data, 1, dst, 1);
 		cblas_sscal(eq->grid->nk, (float) eq->symc[j], dst, 1);
@@ -253,7 +253,7 @@ void Jx(lneq_t *eq, float *x, float *r)
         dst += eq->grid->nk;
     }
 	*/
-	cblas_sscal(n, (float) -eq->grid->nr, r, 1);
+	cblas_sscal(n, -1.0f * eq->grid->nr, r, 1);
     cblas_saxpy(n, -1.0f, x, 1, r, 1);
     dst = r;
     src = t;
@@ -262,13 +262,13 @@ void Jx(lneq_t *eq, float *x, float *r)
 		/*memcpy(eq->grid->data, src, eq->grid->nk * sizeof(float));*/
         cblas_scopy(eq->grid->nk, src, 1, eq->grid->data, 1);
         src += eq->grid->nk;
-		fftwf_execute(eq->grid->bwd);
+	fgrid_bwd(eq->grid);
         b = eq->grid->data;
 		for (i = 0; i < eq->grid->m; ++i) {
 			/*for (k = 0; k < eq->grid->b; ++k)
 				dst[k] += b[k];*/
             cblas_saxpy(eq->grid->b,1.0f,b,1,dst,1);
-            b += eq->grid->a;
+	    b += eq->grid->b;
             dst += eq->grid->b;
         }
     }

@@ -1,6 +1,6 @@
 CC=gcc
 
-FFTWLFLAGS= -lfftw3 -lfftw3f
+FFTFLAGS= ../cpocketfft/src/libcpocketfft.a -lstdc++
 
 SRC = $(wildcard *.c)
 OBJSRL = $(addprefix .o.serial/,$(SRC:.c=.o))
@@ -10,10 +10,10 @@ all:	serial
 serial:	$(OBJSRL) | bin
 	$(CC) -o ../bin/rism3d $(OBJSRL) \
 	    ../argtable2-13/lib/libargtable2.a \
-            $(FFTWLFLAGS) -lm -lopenblas
+            $(FFTFLAGS) -lm -lopenblas
 
 .o.serial/%.o:	%.c
-	$(CC) -c -I../argtable2-13/include -o $@ $<
+	$(CC) -c -O3 -I../argtable2-13/include -I../cpocketfft/src -o $@ $<
 
 $(OBJSRL):	| .o.serial
 

@@ -1,7 +1,7 @@
 
 all:	serial
 
-serial:	argtable
+serial:	argtable cpocketfft/src/libcpocketfft.a
 	cd src && $(MAKE) serial
 
 argtable:       | argtable2-13
@@ -17,6 +17,9 @@ argtable2-13: argtable2-13.tar.gz
 argtable2-13.tar.gz:
 	wget http://prdownloads.sourceforge.net/argtable/argtable2-13.tar.gz;
 
+cpocketfft/src/libcpocketfft.a:
+	cd cpocketfft/src && $(MAKE) libcpocketfft.a
+
 .PHONY: clean test
 
 test:
@@ -24,5 +27,6 @@ test:
 
 clean:
 	rm -rf argtable2-13
+	cd cpocketfft/src && $(MAKE) clean
 	cd src && $(MAKE) clean
 	cd test && $(MAKE) clean
