@@ -1,22 +1,16 @@
 #ifndef __3D_RISM_DATA_H
 #define __3D_RISM_DATA_H
 
-#include <fftw3.h>
-
 typedef struct
 {
-	fftw_plan fwd;
-	fftw_plan bwd;
-	int n, m, a, b, nk, nr, *nn;
-	double *data;
+	size_t n, m, a, b, nk, nr, *nn;
+	double *data, *tmp;
 } grid_d_t;
 
 typedef struct
 {
-	fftwf_plan fwd;
-	fftwf_plan bwd;
-	int n, m, a, b, nk, nr, *nn;
-	float *data;
+	size_t n, m, a, b, nk, nr, *nn;
+	float *data, *tmp;
 } grid_f_t;
 
 typedef struct {

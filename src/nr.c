@@ -2,7 +2,6 @@
 #include <assert.h>
 #include <math.h>
 #include <cblas.h>
-#include <fftw3.h>
 #include <time.h>
 #include <stdlib.h>
 
