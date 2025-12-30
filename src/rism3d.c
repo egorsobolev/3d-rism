@@ -226,6 +226,8 @@ int main(int argc, char **argv)
 		exitcode = 4;
 		goto exit3;
 	}
+
+	eq.grid = &g;
 	t0 = walltime() - t0;
 
 	ms.c = (3 * g.na + 3 * g.nk + 2 * g.nr + w.natom * g.nr + 6 * m.natom) * sizeof(double) + g.nk * (sizeof(int) + sizeof(float));
@@ -337,18 +339,6 @@ int main(int argc, char **argv)
 		for (k = 0; k < g.nr; ++k)
 			tuv[i++] = eq.rism.asymcr[k] * eq.solv.charge[j];
 
-	if (mkdgrid(3, g.n, &eq.grid)) {
-		printf("%s: insufficient memory\n", progname);
-		exitcode = 4;
-		goto exit6;
-	}
-	if (mkfgrid(3, g.n, &eq.lngr)) {
-		rmdgrid(&eq.grid);
-		printf("%s: insufficient memory\n", progname);
-		exitcode = 4;
-		goto exit6;
-	}
-
 	tol = prec->dval[0];
 	nit = mxit->ival[0];
 
@@ -370,9 +360,6 @@ int main(int argc, char **argv)
 		goto exit6;
 	}
 	closure_c(g.nr * w.natom, eq.rism.uuv, tuv, cuv);
-
-	rmfgrid(&eq.lngr);
-	rmdgrid(&eq.grid);
 
 	cblas_daxpy(g.nr * w.natom, 1.0, cuv, 1, tuv, 1);
 

@@ -181,20 +181,20 @@ int nr(eqoz_t *eq, double *t, double *tol, int *maxit)
 		ln.xvva[j] = (float) eq->solv.xvva[j];
 	*/
 	ln.indga = eq->solv.indga;
-	ln.grid = &eq->lngr;
+	ln.grid = eq->grid;
 	m = ln.grid->nr * ln.natv;
 	ln.dcdg = (float *) malloc(m * sizeof(float));
 	b = (float *) malloc((size_t) m * sizeof(float));
 	x = (float *) malloc((size_t) m * sizeof(float));
 
-	n = eq->solv.natv * eq->grid.nr;
+	n = eq->solv.natv * eq->grid->nr;
 	v = sqrt(n);
 
 	d = (double *) malloc((size_t) n * sizeof(double));
 	s = (double *) malloc((size_t) n * sizeof(double));
 	tN = (double *) malloc((size_t) n * sizeof(double));
 
-	eqoz(&eq->grid, &eq->rism, &eq->solv, eq->closure, t, d, ln.dcdg);
+	eqoz(eq, t, d, ln.dcdg);
 	err = cblas_dnrm2(n, d, 1) / v;
 
 	print("||Z(t0)|| = %.1e\n", err);
@@ -226,7 +226,7 @@ int nr(eqoz_t *eq, double *t, double *tol, int *maxit)
 
 		cblas_dcopy(n, t, 1, tN, 1);
 		cblas_daxpy(n, 1.0, s, 1, tN, 1);
-		eqoz(&eq->grid, &eq->rism, &eq->solv, eq->closure, tN, d, ln.dcdg);
+		eqoz(eq, tN, d, ln.dcdg);
 		errN = cblas_dnrm2(n, d, 1) / v;
 
 		j = 0;
@@ -235,7 +235,7 @@ int nr(eqoz_t *eq, double *t, double *tol, int *maxit)
 			lambda *= sarm;
 			cblas_dcopy(n, t, 1, tN, 1);
 			cblas_daxpy(n, lambda, s, 1, tN, 1);
-			eqoz(&eq->grid, &eq->rism, &eq->solv, eq->closure, tN, d, ln.dcdg);
+			eqoz(eq, tN, d, ln.dcdg);
 			errN = cblas_dnrm2(n, d, 1) / v;
 			++j;
 		}

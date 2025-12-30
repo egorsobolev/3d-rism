@@ -1,17 +1,18 @@
 #ifndef __3D_RISM_DATA_H
 #define __3D_RISM_DATA_H
 
-typedef struct
+struct Grid
 {
-	size_t n, m, a, b, nk, nr, *nn;
-	double *data, *tmp;
-} grid_d_t;
-
-typedef struct
-{
-	size_t n, m, a, b, nk, nr, *nn;
-	float *data, *tmp;
-} grid_f_t;
+	int nr, nk, nk2, na;
+	int n[3];
+	size_t fft_shape[3];
+	double l[3], s[3];
+	double *v;
+	double *v2;
+	double *a;
+	int *ia;
+};
+typedef struct Grid grid_t;
 
 typedef struct {
 	double *asymcr;
@@ -36,8 +37,7 @@ typedef void closure_t(int, double *, double *, double *, float *);
 typedef struct {
 	rism_t rism;
 	solv_t solv;
-	grid_d_t grid;
-	grid_f_t lngr;
+	grid_t grid;
 	closure_t *closure;
 } eqoz_t;
 
@@ -46,7 +46,7 @@ typedef struct {
 	float *dcdg;
 	double *xvva; /* float *xvva; */
 	unsigned int *indga;
-	grid_f_t *grid;
+	grid_t *grid;
 } lneq_t;
 
 #endif //__3D_RISM_DATA_H

@@ -28,8 +28,7 @@ typedef struct {
 typedef struct {
 	rism_t rism;
 	solv_t solv;
-	dgrid_t grid;
-	fgrid_t lngr;
+	grid_t *grid;
 	closure_t *closure;
 } eqoz_t;
 
@@ -39,14 +38,14 @@ typedef struct {
 	float *dcdg;
 	double *xvva; /* float *xvva; */
 	unsigned int *indga;
-	fgrid_t *grid;
+	grid_t *grid;
 } lneq_t;
 
 void hnc(int n, const double *uuv, const double *tuv, double *cuv, float *f);
 void hnc_c(int n, const double *uuv, const double *tuv, double *cuv);
 void plhnc(int n, const double *uuv, const double *tuv, double *cuv, float *f);
 void plhnc_c(int n, const double *uuv, const double *tuv, double *cuv);
-void eqoz(dgrid_t *grid, rism_t *rism, solv_t *solv, closure_t *closure, double *tuv, double *d, float *f);
+void eqoz(eqoz_t *eq, double *tuv, double *d, float *f);
 void Jx(lneq_t *eq, float *x, float *r);
 int nr(eqoz_t *eq, double *t, double *tol, int *maxit);
 
