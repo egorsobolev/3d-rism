@@ -92,6 +92,7 @@ int ginit(const box_t *b, grid_t *g)
 		g->l[j] = b->l[j];
 		g->n[j] = b->n[j];
 		g->s[j] = b->s[j];
+		g->fft_shape[j] = b->n[2 - j];
 		/* make wave coordinates */
 		dk = 2. * M_PI / b->l[j];
 		k0 = n[j] / 2 - 1;
@@ -151,44 +152,6 @@ int ginit(const box_t *b, grid_t *g)
 	/* deallocate memory */
 	free(k);
 	free(ig2);
-
-	return 0;
-}
-
-int mkdgrid(int n, int *nn, dgrid_t *p)
-{
-	size_t i, m;
-
-	if (n > GRID_DIM)
-		return -1;
-	p->n = n;
-	p->nn[n - 1] = nn[0];
-	m = 1;
-	for (i = 1; i < n; ++i) {
-		m *= nn[i];
-		p->nn[n - i - 1] = nn[i];
-	}
-	p->nr = nn[0] * m;
-	p->nk = 2 * (nn[0] / 2 + 1) * m;
-
-	return 0;
-}
-
-int mkfgrid(int n, int *nn, fgrid_t *p)
-{
-	size_t i, m;
-
-	if (n > GRID_DIM)
-		return -1;
-	p->n = n;
-	p->nn[n - 1] = nn[0];
-	m = 1;
-	for (i = 1; i < n; ++i) {
-		m *= nn[i];
-		p->nn[n - i - 1] = nn[i];
-	}
-	p->nr = nn[0] * m;
-	p->nk = 2 * (nn[0] / 2 + 1) * m;
 
 	return 0;
 }

@@ -226,6 +226,8 @@ int main(int argc, char **argv)
 		exitcode = 4;
 		goto exit3;
 	}
+
+	eq.grid = &g;
 	t0 = walltime() - t0;
 
 	ms.c = (3 * g.na + 3 * g.nk + 2 * g.nr + w.natom * g.nr + 6 * m.natom) * sizeof(double) + g.nk * (sizeof(int) + sizeof(float));
@@ -336,17 +338,6 @@ int main(int argc, char **argv)
 	for (j = 0; j < w.natom; ++j)
 		for (k = 0; k < g.nr; ++k)
 			tuv[i++] = eq.rism.asymcr[k] * eq.solv.charge[j];
-
-	if (mkdgrid(3, g.n, &eq.grid)) {
-		printf("%s: too many dimensions for grid\n", progname);
-		exitcode = 4;
-		goto exit6;
-	}
-	if (mkfgrid(3, g.n, &eq.lngr)) {
-		printf("%s: too many dimensions for grid\n", progname);
-		exitcode = 4;
-		goto exit6;
-	}
 
 	tol = prec->dval[0];
 	nit = mxit->ival[0];

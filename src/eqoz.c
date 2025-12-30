@@ -44,31 +44,32 @@ void plhnc_c(int n, const double *uuv, const double *tuv, double *cuv)
 }
 
 
-void eqoz(dgrid_t *grid, rism_t *rism, solv_t *solv, closure_t *closure, double *tuv, double *d, float *f)
+void eqoz(eqoz_t *eq, double *tuv, double *d, float *f)
 {
 	int i, j, k, l, n, m;
 	double *r, *t, *s, *src, *dst, *b, a;
-	size_t nk, nr;
+	size_t nk, nr, natv;
 
-	nk = grid->nk;
-	nr = grid->nr;
+	nk = eq->grid->nk;
+	nr = eq->grid->nr;
+	natv = eq->solv.natv;
 
-	n = solv->natv * nr;
-	m = solv->natv * nk;
+	n = natv * nr;
+	m = natv * nk;
 
 	r = malloc(n * sizeof(double));
 	t = malloc(m * sizeof(double));
 	s = malloc(m * sizeof(double));
 
-	(*closure)(n, rism->uuv, tuv, r, f);
+	(*eq->closure)(n, eq->rism.uuv, tuv, r, f);
 
 	cblas_dcopy(n, r, 1, d, 1);
 	/*
 	 * d = r + rism.asymcr(:) * solv.charge;
 	 */
 	dst = d;
-	for (j = 0; j < solv->natv; ++j) {
-		cblas_daxpy(nr, solv->charge[j], rism->asymcr, 1, dst, 1);
+	for (j = 0; j < natv; ++j) {
+		cblas_daxpy(nr, eq->solv.charge[j], eq->rism.asymcr, 1, dst, 1);
 		dst += nr;
 	}
 
@@ -78,11 +79,11 @@ void eqoz(dgrid_t *grid, rism_t *rism, solv_t *solv, closure_t *closure, double 
 	 */
 	src = d;
 	dst = t;
-	for (j = 0; j < solv->natv; j++) {
+	for (j = 0; j < natv; j++) {
 		cblas_dscal(nr, 1.0/nr, src, 1);
-		fft_r2c(grid->n, grid->nn, src, (complex_double *) dst, 1.0);
-		cblas_daxpy(nk, -solv->charge[j], rism->asymck, 1, dst, 1);
-		cblas_dscal(nk, solv->symc[j], dst, 1);
+		fft_r2c(3, eq->grid->fft_shape, src, (complex_double *) dst, 1.0);
+		cblas_daxpy(nk, -eq->solv.charge[j], eq->rism.asymck, 1, dst, 1);
+		cblas_dscal(nk, eq->solv.symc[j], dst, 1);
 
 		src += nr;
 		dst += nk;
@@ -98,16 +99,16 @@ void eqoz(dgrid_t *grid, rism_t *rism, solv_t *solv, closure_t *closure, double 
 		/* side elemnts */
 		for (k = 0; k < j; k += nk) {
 			for (i = 0; i < nk; ++i) {
-				a = solv->xvva[solv->indga[i / 2] + l];
+				a = eq->solv.xvva[eq->solv.indga[i / 2] + l];
 				s[j + i] += a * t[k + i];
 				s[k + i] += a * t[j + i];
 			}
-			l += solv->lxvva;
+			l += eq->solv.lxvva;
 		}
 		/* diagonal elements */
 		for (i = 0; i < nk; ++i)
-			s[j + i] += t[j + i] * solv->xvva[solv->indga[i / 2] + l];
-		l += solv->lxvva;
+			s[j + i] += t[j + i] * eq->solv.xvva[eq->solv.indga[i / 2] + l];
+		l += eq->solv.lxvva;
 	}
 	/*
 	memset(s, 0, m * sizeof(double));
@@ -130,13 +131,13 @@ void eqoz(dgrid_t *grid, rism_t *rism, solv_t *solv, closure_t *closure, double 
 	 * s = s + rism.asymhk(:) * (solv.charge_sp / solv.dielconst);
 	 */
 	dst = s;
-	src = rism->huvk0;
-	for (j = 0; j < solv->natv; ++j) {
-		cblas_dscal(nk, 1.0 / solv->symc[j], dst, 1);
+	src = eq->rism.huvk0;
+	for (j = 0; j < natv; ++j) {
+		cblas_dscal(nk, 1.0 / eq->solv.symc[j], dst, 1);
 		dst[0] += src[0];
 		dst[1] += src[1];
 
-		cblas_daxpy(nk, solv->charge_sp[j], rism->asymhk, 1, dst, 1);
+		cblas_daxpy(nk, eq->solv.charge_sp[j], eq->rism.asymhk, 1, dst, 1);
 
 		dst += nk;
 		src += 2;
@@ -147,8 +148,8 @@ void eqoz(dgrid_t *grid, rism_t *rism, solv_t *solv, closure_t *closure, double 
 	 */
 	dst = d;
 	src = s;
-	for (j = 0; j < solv->natv; j++) {
-		fft_c2r(grid->n, grid->nn, (complex_double *) src, dst, 1.0);
+	for (j = 0; j < natv; j++) {
+		fft_c2r(3, eq->grid->fft_shape, (complex_double *) src, dst, 1.0);
 		src += nk;
 		dst += nr;
 	}
@@ -158,8 +159,8 @@ void eqoz(dgrid_t *grid, rism_t *rism, solv_t *solv, closure_t *closure, double 
 	 */
 	dst = d;
 	src = r;
-	for (j = 0; j < solv->natv; j++) {
-		cblas_daxpy(nr, -solv->charge_sp[j], rism->asymhr, 1, dst, 1);
+	for (j = 0; j < natv; j++) {
+		cblas_daxpy(nr, -eq->solv.charge_sp[j], eq->rism.asymhr, 1, dst, 1);
 		cblas_daxpy(nr, -1.0, src, 1, dst, 1);
 		cblas_daxpy(nr, -1.0, tuv, 1, dst, 1);
 
@@ -180,11 +181,9 @@ void Jx(lneq_t *eq, float *x, float *r)
 	int i, j, k, l;
 	int n, m;
 	size_t nk, nr;
-	fgrid_t *grid;
 
-	grid = eq->grid;
-	nk = grid->nk;
-	nr = grid->nr;
+	nk = eq->grid->nk;
+	nr = eq->grid->nr;
 
 	n = eq->natv * nr;
 	m = eq->natv * nk;
@@ -199,7 +198,7 @@ void Jx(lneq_t *eq, float *x, float *r)
 	src = r;
 	dst = d;
 	for (j = 0; j < eq->natv; j++) {
-		fftf_r2c(grid->n, grid->nn, src, (complex_float *) dst, 1.0f);
+		fftf_r2c(3, eq->grid->fft_shape, src, (complex_float *) dst, 1.0f);
 		cblas_sscal(nk, (float) eq->symc[j], dst, 1);
 
 		src += nr;
@@ -244,7 +243,7 @@ void Jx(lneq_t *eq, float *x, float *r)
 	src = t;
 	for (j = 0; j < eq->natv; j++) {
 		cblas_sscal(nk, 1.0f / (float) eq->symc[j], src, 1);
-		fftf_c2r(grid->n, grid->nn, (complex_float *) src, d, 1.0f);
+		fftf_c2r(3, eq->grid->fft_shape, (complex_float *) src, d, 1.0f);
 		cblas_saxpy(nr,1.0f,d,1,dst,1);
 
 		src += nk;

@@ -17,6 +17,7 @@ struct Grid
 {
 	int nr, nk, nk2, na;
 	int n[3];
+	size_t fft_shape[3];
 	double l[3], s[3];
 	double *v;
 	double *v2;
@@ -25,24 +26,10 @@ struct Grid
 };
 typedef struct Grid grid_t;
 
-struct GridJ
-{
-	size_t n, nk, nr, nn[GRID_DIM];
-};
-typedef struct GridJ dgrid_t;
-
-struct GridEQ
-{
-	size_t n, nk, nr, nn[GRID_DIM];
-};
-typedef struct GridEQ fgrid_t;
-
 
 #include "mol.h"
 
 void mkbox(const double *, const double *, const mol_t *, box_t *);
 int ginit(const box_t *, grid_t *);
-int mkdgrid(int n, int *nn, dgrid_t *p);
-int mkfgrid(int n, int *nn, fgrid_t *p);
 
 #endif //__RISM3D_GRID_H
