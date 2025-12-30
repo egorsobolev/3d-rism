@@ -57,9 +57,9 @@ void eqoz(eqoz_t *eq, double *tuv, double *d, float *f)
 	n = natv * nr;
 	m = natv * nk;
 
-	r = malloc(n * sizeof(double));
-	t = malloc(m * sizeof(double));
-	s = malloc(m * sizeof(double));
+	r = malloc((n + 2*m) * sizeof(double));
+	t = r + n;
+	s = t + m;
 
 	(*eq->closure)(n, eq->rism.uuv, tuv, r, f);
 
@@ -169,9 +169,44 @@ void eqoz(eqoz_t *eq, double *tuv, double *d, float *f)
 		tuv += nr;
 	}
 
-	free(s);
-	free(t);
 	free(r);
+}
+
+int mk_lneq(lneq_t *ln, eqoz_t *eq)
+{
+	size_t natv, nr, nk, n, m;
+
+	natv = eq->solv.natv;
+	nr = eq->grid->nr;
+	nk = eq->grid->nk;
+	n = nr * natv;
+	m = nk * natv;
+
+	ln->natv = natv;
+	ln->symc = eq->solv.symc;
+	ln->lxvva = eq->solv.lxvva;
+	ln->xvva = eq->solv.xvva;
+	ln->indga = eq->solv.indga;
+	ln->grid = eq->grid;
+
+	/*
+	 dcdg: float[n]
+	 jx_data: float[2 * m]
+	 solver_data: float[5 * n]
+	 */
+	ln->dcdg = (float *) malloc((6*n + 2*m) * sizeof(float));
+	if (!ln->dcdg)
+		return -1;
+
+	ln->jx_data = ln->dcdg + n;
+	ln->solver_data = ln->jx_data + 2*m;
+
+	return 0;
+}
+
+void rm_lneq(lneq_t *ln)
+{
+	free(ln->dcdg);
 }
 
 /* + 2 * n * sizeof(float) */
@@ -184,11 +219,10 @@ void Jx(lneq_t *eq, float *x, float *r)
 
 	nk = eq->grid->nk;
 	nr = eq->grid->nr;
-
 	n = eq->natv * nr;
 	m = eq->natv * nk;
 
-	d = malloc(2 * m * sizeof(float));
+	d = eq->jx_data;
 	t = d + m;
 
 	for (i = 0; i < n; i++) {
@@ -249,6 +283,4 @@ void Jx(lneq_t *eq, float *x, float *r)
 		src += nk;
 		dst += nr;
 	}
-
-	free(d);
 }

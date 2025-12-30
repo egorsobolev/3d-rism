@@ -39,6 +39,9 @@ typedef struct {
 	double *xvva; /* float *xvva; */
 	unsigned int *indga;
 	grid_t *grid;
+	/* private */
+	float *solver_data;
+	float *jx_data;
 } lneq_t;
 
 void hnc(int n, const double *uuv, const double *tuv, double *cuv, float *f);
@@ -46,6 +49,8 @@ void hnc_c(int n, const double *uuv, const double *tuv, double *cuv);
 void plhnc(int n, const double *uuv, const double *tuv, double *cuv, float *f);
 void plhnc_c(int n, const double *uuv, const double *tuv, double *cuv);
 void eqoz(eqoz_t *eq, double *tuv, double *d, float *f);
+int mk_lneq(lneq_t *ln, eqoz_t *eq);
+void rm_lneq(lneq_t *ln);
 void Jx(lneq_t *eq, float *x, float *r);
 int nr(eqoz_t *eq, double *t, double *tol, int *maxit);
 
