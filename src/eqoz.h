@@ -30,6 +30,9 @@ typedef struct {
 	solv_t solv;
 	grid_t *grid;
 	closure_t *closure;
+	/* private */
+	double *solver_data;
+	double *eq_data;
 } eqoz_t;
 
 typedef struct {
@@ -48,6 +51,8 @@ void hnc(int n, const double *uuv, const double *tuv, double *cuv, float *f);
 void hnc_c(int n, const double *uuv, const double *tuv, double *cuv);
 void plhnc(int n, const double *uuv, const double *tuv, double *cuv, float *f);
 void plhnc_c(int n, const double *uuv, const double *tuv, double *cuv);
+int mk_eqoz(eqoz_t *eq);
+void rm_eqoz(eqoz_t *eq);
 void eqoz(eqoz_t *eq, double *tuv, double *d, float *f);
 int mk_lneq(lneq_t *ln, eqoz_t *eq);
 void rm_lneq(lneq_t *ln);

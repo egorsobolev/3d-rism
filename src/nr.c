@@ -23,6 +23,9 @@ int bicgstab(lneq_t *eq, int N, const float *b, float *x, float *tol, int *it)
 	float err, normb;
 	int its, maxit;
 
+	/*
+	 r, h, p, v, s: float[N]
+	 */
 	r = eq->solver_data;
 	h = r + N;
 	p = h + N;
@@ -173,11 +176,11 @@ int nr(eqoz_t *eq, double *t, double *tol, int *maxit)
 	 b, x: float[n]
 	 d, s, tN: double[n]
 	 */
-	b = (float *) malloc(n * (2 * sizeof(float) + 3 * sizeof(double)));
-	x = b + n;
-	d = (double *) (b + n);
+	d = eq->solver_data;
 	s = d + n;
 	tN = s + n;
+	b = (float *) (tN + n);
+	x = b + n;
 
 	eqoz(eq, t, d, ln.dcdg);
 	err = cblas_dnrm2(n, d, 1) / v;
@@ -239,7 +242,6 @@ int nr(eqoz_t *eq, double *t, double *tol, int *maxit)
 	}
 
 	rm_lneq(&ln);
-	free(b);
 
 	*maxit = i;
 	*tol = err;

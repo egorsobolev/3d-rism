@@ -5,6 +5,7 @@
 #include <math.h>
 #include <cblas.h>
 
+
 void hnc(int n, const double *uuv, const double *tuv, double *cuv, float *f)
 {
 	int i;
@@ -15,12 +16,15 @@ void hnc(int n, const double *uuv, const double *tuv, double *cuv, float *f)
 		cuv[i] = a - tuv[i];
 	}
 }
+
+
 void hnc_c(int n, const double *uuv, const double *tuv, double *cuv)
 {
 	int i;
 	for (i = 0; i < n; ++i)
 		cuv[i] = exp(tuv[i] - uuv[i]) - 1.0 - tuv[i];
 }
+
 
 void plhnc(int n, const double *uuv, const double *tuv, double *cuv, float *f)
 {
@@ -33,6 +37,8 @@ void plhnc(int n, const double *uuv, const double *tuv, double *cuv, float *f)
 		f[i] = (float) b;
 	}
 }
+
+
 void plhnc_c(int n, const double *uuv, const double *tuv, double *cuv)
 {
 	int i;
@@ -41,6 +47,39 @@ void plhnc_c(int n, const double *uuv, const double *tuv, double *cuv)
 		a = tuv[i] - uuv[i];
 		cuv[i] = exp((a < 0.0) * a) + (a >= 0.0) * a - 1.0 - tuv[i];
 	}
+}
+
+
+int mk_eqoz(eqoz_t *eq)
+{
+	size_t natv, nk, nr, m, n;
+	size_t solver_data_size;
+	size_t eq_data_size;
+
+	natv = eq->solv.natv;
+	nr = eq->grid->nr;
+	nk = eq->grid->nk;
+	n = nr * natv;
+	m = nk * natv;
+
+	/*
+	 solver_data: float[2 * n] & double[3 * n]
+	 eq_data: double[n + 2 * m]
+	 */
+	solver_data_size = n * (2 * sizeof(float) + 3 * sizeof(double));
+	eq_data_size = (n + 2 * m) * sizeof(double);
+	eq->eq_data = (double *) malloc(solver_data_size + eq_data_size);
+	if (!eq->eq_data)
+		return -1;
+	eq->solver_data = eq->eq_data + eq_data_size / sizeof(double);
+
+	return 0;
+}
+
+
+void rm_eqoz(eqoz_t *eq)
+{
+	free(eq->eq_data);
 }
 
 
@@ -57,7 +96,7 @@ void eqoz(eqoz_t *eq, double *tuv, double *d, float *f)
 	n = natv * nr;
 	m = natv * nk;
 
-	r = malloc((n + 2*m) * sizeof(double));
+	r = eq->eq_data;
 	t = r + n;
 	s = t + m;
 
@@ -168,9 +207,8 @@ void eqoz(eqoz_t *eq, double *tuv, double *d, float *f)
 		src += nr;
 		tuv += nr;
 	}
-
-	free(r);
 }
+
 
 int mk_lneq(lneq_t *ln, eqoz_t *eq)
 {
@@ -204,10 +242,12 @@ int mk_lneq(lneq_t *ln, eqoz_t *eq)
 	return 0;
 }
 
+
 void rm_lneq(lneq_t *ln)
 {
 	free(ln->dcdg);
 }
+
 
 /* + 2 * n * sizeof(float) */
 void Jx(lneq_t *eq, float *x, float *r)

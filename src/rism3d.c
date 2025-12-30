@@ -317,6 +317,7 @@ int main(int argc, char **argv)
 	free(u0);
 	free(g.v2);
 
+	mk_eqoz(&eq);
 	/*
 	if (pfile->count) {
 		f = fopen(pfile->filename[0], "wb");
@@ -430,6 +431,7 @@ int main(int argc, char **argv)
 		}
 		free(lvl);
 	}
+	rm_eqoz(&eq);
 exit6:
 	free(tuv);
 exit5:
