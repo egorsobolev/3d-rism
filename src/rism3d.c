@@ -206,8 +206,8 @@ int main(int argc, char **argv)
 	// TODO: check exit code and raise exception
 	mk_eqoz(&eq, &b, &w, &m, ljcut->dval[0], ccut->dval[0], spd, th);
 
+	rm_water(&w);
 	free(eq.grid.a);
-	free(w.xvv);
 	free(eq.grid.v2);
 	/*
 	if (pfile->count) {

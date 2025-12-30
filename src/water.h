@@ -37,6 +37,7 @@ typedef struct Water water_t;
 #include "grid.h"
 
 int waterread(const char *, water_t *);
+void rm_water(water_t *);
 int mkxvva(const grid_t *, const water_t *, double *);
 
 #endif //__RISM3D_WATER_H

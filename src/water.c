@@ -105,7 +105,7 @@ int waterread(const char *fn, water_t *w)
 		free(hv);
 		return 2;
 	}
-	w->xvv = (double *) calloc(3 * (w->ngrid + 1), sizeof(double));
+	w->xvv = (double *) malloc(3 * (w->ngrid + 1) * sizeof(double));
 	if (!w->xvv) {
 		free(hv);
 		return 4;
@@ -143,6 +143,11 @@ int waterread(const char *fn, water_t *w)
 
 	fclose(f);
 	return 0;
+}
+
+void rm_water(water_t *w)
+{
+	free(w->xvv);
 }
 
 int mkxvva(const grid_t *g, const water_t *w, double *xvva)
