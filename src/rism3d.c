@@ -73,10 +73,7 @@ int main(int argc, char **argv)
 	double gsp[3], mrg[3];
 	int spd[3];
 	box_t b;
-	//grid_t g;
 	jvxl_box_t bj;
-	walltime_t t0;
-	//double *u0;
 	int err, i, j, k;
 	eqoz_t eq;
 	double tol, *tuv, *cuv, td[10], *mx, *lvl, th;
@@ -84,7 +81,6 @@ int main(int argc, char **argv)
 	musc_t *musc;
 	closure_c_t *closure_c;
 	char prefix[20], filename[40];
-	//meminfo_t ms, mn;
 
 	int nit, flag, nprefix;
 
