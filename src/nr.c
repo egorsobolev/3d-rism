@@ -169,7 +169,7 @@ int nr(eqoz_t *eq, double *t, double *tol, int *maxit)
 
 	mk_lneq(&ln, eq);
 
-	n = eq->solv.natv * eq->grid->nr;
+	n = eq->solv.natv * eq->grid.nr;
 	v = sqrt(n);
 
 	/*

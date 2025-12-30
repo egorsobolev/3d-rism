@@ -4,6 +4,18 @@
 typedef void closure_t(int, const double *, const double *, double *, float *);
 typedef void closure_c_t(int, const double *, const double *, double *);
 
+#include <stdlib.h>
+
+struct MEMORYINFO
+{
+	size_t c;
+	size_t nr;
+	size_t eq;
+	size_t lsolv;
+	size_t jx;
+};
+typedef struct MEMORYINFO meminfo_t;
+
 typedef struct {
 	double *asymcr;
 	double *asymck;
@@ -24,11 +36,13 @@ typedef struct {
 } solv_t;
 
 #include "grid.h"
+#include "water.h"
+#include "mol.h"
 
 typedef struct {
 	rism_t rism;
 	solv_t solv;
-	grid_t *grid;
+	grid_t grid;
 	closure_t *closure;
 	/* private */
 	double *solver_data;
@@ -51,7 +65,8 @@ void hnc(int n, const double *uuv, const double *tuv, double *cuv, float *f);
 void hnc_c(int n, const double *uuv, const double *tuv, double *cuv);
 void plhnc(int n, const double *uuv, const double *tuv, double *cuv, float *f);
 void plhnc_c(int n, const double *uuv, const double *tuv, double *cuv);
-int mk_eqoz(eqoz_t *eq);
+int mk_eqoz(eqoz_t *eq, box_t *g, water_t *water, mol_t *mol,
+            double ljcut, double ccut, int *spd, double th);
 void rm_eqoz(eqoz_t *eq);
 void eqoz(eqoz_t *eq, double *tuv, double *d, float *f);
 int mk_lneq(lneq_t *ln, eqoz_t *eq);
