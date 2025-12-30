@@ -6,6 +6,7 @@
 #include <stdlib.h>
 
 #include "eqoz.h"
+#include "utils.h"
 
 #define print  printf
 #define flush  fflush(stdin)
@@ -158,11 +159,12 @@ int nr(eqoz_t *eq, double *t, double *tol, int *maxit)
 	double *d, *s, *tN, norms, eta, lambda, err, errN, v;
 	float *b, *x, eps;
 	int n, m, i, j, flag, nlit, maxlit;
-	double lntm, nrtm, lntmi;
+	double lntm, nrtm, lntmi, nrtm_cpu;
 	lneq_t ln;
 	fterm_ew_t fterm;
 
-	nrtm = clock() / (double) CLOCKS_PER_SEC;
+	nrtm_cpu = clock() / (double) CLOCKS_PER_SEC;
+	nrtm = walltime() * 1e-6;
 	lntm = .0;
 
 	ftew_setdef(&fterm, *tol);
@@ -208,9 +210,9 @@ int nr(eqoz_t *eq, double *t, double *tol, int *maxit)
 			b[j] = (float) d[j];
 			x[j] = .0f;
 		}
-		lntmi = clock() / (double) CLOCKS_PER_SEC;
+		lntmi = walltime() * 1e-6;
 		flag = bicgstab(&ln, n, b, x, &eps, &nlit);
-		lntmi = clock() / (double) CLOCKS_PER_SEC - lntmi;
+		lntmi = walltime() * 1e-6 - lntmi;
 		lntm += lntmi;
 
 		if (flag) {
@@ -245,7 +247,8 @@ int nr(eqoz_t *eq, double *t, double *tol, int *maxit)
 		cblas_dcopy(n, tN, 1, t, 1);
 		err = errN;
 
-		print("%5d %7d %1d %8.1f %1d %5.2f %10.6f %11.6f\n", i+1, nlit, flag, lntmi, j, eta, norms, err);
+		print("%5d %7d %1d %8.1lf %1d %5.2lf %10.6lf %11.6lf\n",
+		      i+1, nlit, flag, lntmi, j, eta, norms, err);
 		flush;
 		++i;
 	}
@@ -260,8 +263,9 @@ int nr(eqoz_t *eq, double *t, double *tol, int *maxit)
 	*maxit = i;
 	*tol = err;
 
-	nrtm = clock() / (double) CLOCKS_PER_SEC - nrtm;
-	print("NR time is %.1fs, BiCGStab time is %.1fs\n", nrtm, lntm);
+	nrtm_cpu = clock() / (double) CLOCKS_PER_SEC - nrtm_cpu;
+	nrtm = walltime() * 1e-6 - nrtm;
+	print("NR: %.1lfs, BiCGStab: %.1lfs, CPU usage: %.1lf\n", nrtm, lntm, nrtm_cpu / nrtm);
 	print("||Z(tn)|| = %.1e\n", err);
 
 	return 0; /* OK */

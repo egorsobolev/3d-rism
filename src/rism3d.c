@@ -85,7 +85,7 @@ int main(int argc, char **argv)
 	box_t b;
 	grid_t g;
 	jvxl_box_t bj;
-	clock_t t0;
+	walltime_t t0;
 	double *u0;
 	int err, i, j, k;
 	eqoz_t eq;
@@ -217,16 +217,16 @@ int main(int argc, char **argv)
 
 	mkbox(gsp, mrg, &m, &b);
 	printf(" BOX                X        Y        Z\n");
-	printf("  L:         %8.2f %8.2f %8.2f\n", b.l[0], b.l[1], b.l[2]);
+	printf("  L:         %8.2lf %8.2lf %8.2lf\n", b.l[0], b.l[1], b.l[2]);
 	printf("  N:         %8d %8d %8d\n", b.n[0], b.n[1], b.n[2]);
 	printf("\n");
-	t0 =  clock();
+	t0 = walltime();
 	if (ginit(&b, &g)) {
 		printf(" GINIT : insufficient memory\n");
 		exitcode = 4;
 		goto exit3;
 	}
-	t0 = clock() - t0;
+	t0 = walltime() - t0;
 
 	ms.c = (3 * g.na + 3 * g.nk + 2 * g.nr + w.natom * g.nr + 6 * m.natom) * sizeof(double) + g.nk * (sizeof(int) + sizeof(float));
 	mn.c = ms.c + (g.na + 4 * g.nk + 3 * w.ngrid) * sizeof(double);
@@ -246,7 +246,7 @@ int main(int argc, char **argv)
 	printf("     Jx       %12ld %12ld\n", ms.jx, mn.jx);
 	printf("\n");
 
-	printf(" GINIT : Elapse %.2f second(s)\n", (double) t0 / CLOCKS_PER_SEC);
+	printf(" GINIT : Elapse %.2lf second(s)\n", t0 * 1e-6);
 
 	eq.solv.lxvva = g.na;
 	eq.solv.indga = (unsigned int *) g.ia;
@@ -256,7 +256,7 @@ int main(int argc, char **argv)
 		exitcode = 4;
 		goto exit3;
 	}
-	t0 =  clock();
+	t0 = walltime();
 	err = mkxvva(&g, &w, eq.solv.xvva);
 	free(g.a);
 	free(w.xvv);
@@ -271,7 +271,7 @@ int main(int argc, char **argv)
 		free(g.v2);
 		goto exit4;
 	}
-	printf(" MKXVVA: Elapse %.2f second(s)\n", (double) (clock() - t0) / CLOCKS_PER_SEC);
+	printf(" MKXVVA: Elapse %.2lf second(s)\n", (walltime() - t0) * 1e-6);
 
 	molcenter(&b, &m);
 
@@ -288,28 +288,28 @@ int main(int argc, char **argv)
 		goto exit5;
 	}
 
-	t0 =  clock();
+	t0 = walltime();
 	memset(eq.rism.uuv, 0, w.natom * g.nr * sizeof(double));
 	uljuv(&g, &w, &m, ljcut->dval[0], eq.rism.uuv);
-	printf(" ULJUV : Elapse %.2f second(s)\n", (double) (clock() - t0) / CLOCKS_PER_SEC);
+	printf(" ULJUV : Elapse %.2lf second(s)\n", (walltime() - t0) * 1e-6);
 
-	t0 =  clock();
+	t0 = walltime();
 	ucolu(&g, &w, &m, spd, ccut->dval[0], u0);
 	ucoluv(&w, g.nr, u0, eq.rism.uuv);
-	printf(" UCOLUV: Elapse %.2f second(s)\n", (double) (clock() - t0) / CLOCKS_PER_SEC);
+	printf(" UCOLUV: Elapse %.2lf second(s)\n", (walltime() - t0) * 1e-6);
 
-	t0 =  clock();
+	t0 = walltime();
 	eq.rism.asymcr = eq.rism.uuv + w.natom * g.nr;
 	eq.rism.asymhr = eq.rism.asymcr + g.nr;
 	asympr(&g, &w, &m, u0, th, eq.rism.asymcr, eq.rism.asymhr);
-	printf(" ASYMPR: Elapse %.2f second(s)\n", (double) (clock() - t0) / CLOCKS_PER_SEC);
+	printf(" ASYMPR: Elapse %.2lf second(s)\n", (walltime() - t0) * 1e-6);
 
-	t0 =  clock();
+	t0 = walltime();
 	eq.rism.asymck = eq.rism.asymhr + g.nr;
 	eq.rism.asymhk = eq.rism.asymck + g.nk;
 	eq.rism.huvk0 = eq.rism.asymhk + g.nk;
 	asympk(&g, &w, &m, th, eq.rism.asymck, eq.rism.asymhk, eq.rism.huvk0);
-	printf(" ASYMPK: Elapse %.2f second(s)\n", (double) (clock() - t0) / CLOCKS_PER_SEC);
+	printf(" ASYMPK: Elapse %.2lf second(s)\n", (walltime() - t0) * 1e-6);
 	printf("\n");
 
 	free(u0);
@@ -395,7 +395,7 @@ int main(int argc, char **argv)
 	td[1] = (*musc)(&g, &w, eq.rism.uuv, tuv, cuv);
 	td[2] = mugf(&g, &w, eq.rism.uuv, tuv, cuv);
 	td[3] = ichi(&g, &w, eq.rism.uuv, tuv, cuv);
-	printf("xene = %.3f musc = %.3f mugf = %.3f pmv = %.3f\n", td[0], td[1], td[2], td[3]);
+	printf("xene = %.3lf musc = %.3lf mugf = %.3lf pmv = %.3lf\n", td[0], td[1], td[2], td[3]);
 
 	free(cuv);
 
