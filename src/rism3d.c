@@ -326,7 +326,7 @@ exit4:
 exit3:
 	rm_eqoz(&eq);
 exit2:
-	free(m.x);
+	rm_mol(&m);
 exit1:
 	arg_freetable(argtable, sizeof(argtable) / sizeof(argtable[0])); 
 	exit(exitcode);

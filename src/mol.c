@@ -76,6 +76,11 @@ int molread(const char *fn, mol_t *m)
 	return 0;
 }
 
+void rm_mol(mol_t *m)
+{
+	free(m->x);
+}
+
 void molcenter(const box_t *b, mol_t *m)
 {
 	int i, j;
