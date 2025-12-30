@@ -1,5 +1,8 @@
 #include "utils.h"
 
+#include <time.h>
+
+
 int cubicuni(int m, double *f, double *cs, int ltype, double lval, int rtype, double rval)
 {
 	int i, n, n1;
@@ -158,4 +161,16 @@ void quicksort(int n, double *a, int *idx)
 			++p;
 		}
 	}
+}
+
+walltime_t walltime()
+{
+	struct timespec tms;
+	int64_t micros;
+	if (clock_gettime(CLOCK_MONOTONIC, &tms)) {
+		return -1;
+	}
+	micros = tms.tv_sec * 1000000L;
+	micros += tms.tv_nsec / 1000 + (int64_t) (tms.tv_nsec % 1000 >= 500);
+	return micros;
 }
