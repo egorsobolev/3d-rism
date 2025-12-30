@@ -157,7 +157,6 @@ int nr(eqoz_t *eq, double *t, double *tol, int *maxit)
 	float *b, *x, eps;
 	int n, m, i, j, flag, nlit, maxlit;
 	double lntm, nrtm, lntmi, nrtm_cpu;
-	lneq_t ln;
 	fterm_ew_t fterm;
 
 	nrtm_cpu = clock() / (double) CLOCKS_PER_SEC;
@@ -166,8 +165,6 @@ int nr(eqoz_t *eq, double *t, double *tol, int *maxit)
 
 	ftew_setdef(&fterm, *tol);
 	maxlit = 1000;
-
-	mk_lneq(&ln, eq);
 
 	n = eq->solv.natv * eq->grid.nr;
 	v = sqrt(n);
@@ -182,7 +179,7 @@ int nr(eqoz_t *eq, double *t, double *tol, int *maxit)
 	b = (float *) (tN + n);
 	x = b + n;
 
-	eqoz(eq, t, d, ln.dcdg);
+	eqoz(eq, t, d, eq->lneq.dcdg);
 	err = cblas_dnrm2(n, d, 1) / v;
 
 	print("||Z(t0)|| = %.1e\n", err);
@@ -199,7 +196,7 @@ int nr(eqoz_t *eq, double *t, double *tol, int *maxit)
 			x[j] = .0f;
 		}
 		lntmi = walltime() * 1e-6;
-		flag = bicgstab(&ln, n, b, x, &eps, &nlit);
+		flag = bicgstab(&eq->lneq, n, b, x, &eps, &nlit);
 		lntmi = walltime() * 1e-6 - lntmi;
 		lntm += lntmi;
 
@@ -214,7 +211,7 @@ int nr(eqoz_t *eq, double *t, double *tol, int *maxit)
 
 		cblas_dcopy(n, t, 1, tN, 1);
 		cblas_daxpy(n, 1.0, s, 1, tN, 1);
-		eqoz(eq, tN, d, ln.dcdg);
+		eqoz(eq, tN, d, eq->lneq.dcdg);
 		errN = cblas_dnrm2(n, d, 1) / v;
 
 		j = 0;
@@ -223,7 +220,7 @@ int nr(eqoz_t *eq, double *t, double *tol, int *maxit)
 			lambda *= sarm;
 			cblas_dcopy(n, t, 1, tN, 1);
 			cblas_daxpy(n, lambda, s, 1, tN, 1);
-			eqoz(eq, tN, d, ln.dcdg);
+			eqoz(eq, tN, d, eq->lneq.dcdg);
 			errN = cblas_dnrm2(n, d, 1) / v;
 			++j;
 		}
@@ -240,8 +237,6 @@ int nr(eqoz_t *eq, double *t, double *tol, int *maxit)
 		flush;
 		++i;
 	}
-
-	rm_lneq(&ln);
 
 	*maxit = i;
 	*tol = err;

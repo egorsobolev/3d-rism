@@ -200,7 +200,10 @@ int main(int argc, char **argv)
 	molcenter(&b, &m);
 
 	// TODO: check exit code and raise exception
-	mk_eqoz(&eq, &b, &w, &m, ljcut->dval[0], ccut->dval[0], spd, th);
+	if (mk_eqoz(&eq, &b, &w, &m, ljcut->dval[0], ccut->dval[0], spd, th)) {
+		exitcode = 5;
+		goto exit3;
+	}
 
 	rm_water(&w);
 	free(eq.grid.a);
@@ -220,7 +223,7 @@ int main(int argc, char **argv)
 	if (!tuv) {
 		printf("%s: insufficient memory\n", progname);
 		exitcode = 4;
-		goto exit5;
+		goto exit3;
 	}
 	i = 0;
 	for (j = 0; j < w.natom; ++j)
@@ -237,7 +240,7 @@ int main(int argc, char **argv)
 		else if (flag == 2)
 			printf("NR: no convergence of armigo.\n");
 
-		goto exit6;
+		goto exit4;
 	}
 	printf("\n");
 
@@ -245,7 +248,7 @@ int main(int argc, char **argv)
 	if (!cuv) {
 		printf("%s: insufficient memory\n", progname);
 		exitcode = 4;
-		goto exit6;
+		goto exit4;
 	}
 	closure_c(eq.grid.nr * w.natom, eq.rism.uuv, tuv, cuv);
 
@@ -281,7 +284,7 @@ int main(int argc, char **argv)
 		if (!lvl) {
 			printf("%s: insufficient memory\n", progname);
 			exitcode = 4;
-			goto exit6;
+			goto exit4;
 		}
 		mx = lvl + w.natom;
 		memset(bj.s, 0, 9 * sizeof(double));
@@ -318,12 +321,10 @@ int main(int argc, char **argv)
 		}
 		free(lvl);
 	}
-	rm_eqoz(&eq);
-exit6:
-	free(tuv);
-exit5:
 exit4:
+	free(tuv);
 exit3:
+	rm_eqoz(&eq);
 exit2:
 	free(m.x);
 exit1:

@@ -40,16 +40,6 @@ typedef struct {
 #include "mol.h"
 
 typedef struct {
-	rism_t rism;
-	solv_t solv;
-	grid_t grid;
-	closure_t *closure;
-	/* private */
-	double *solver_data;
-	double *eq_data;
-} eqoz_t;
-
-typedef struct {
 	int natv, lxvva;
 	double *symc;
 	float *dcdg;
@@ -60,6 +50,18 @@ typedef struct {
 	float *solver_data;
 	float *jx_data;
 } lneq_t;
+
+typedef struct {
+	rism_t rism;
+	solv_t solv;
+	grid_t grid;
+	lneq_t lneq;
+	closure_t *closure;
+	/* private */
+	double *solver_data;
+	double *eq_data;
+} eqoz_t;
+
 
 void hnc(int n, const double *uuv, const double *tuv, double *cuv, float *f);
 void hnc_c(int n, const double *uuv, const double *tuv, double *cuv);

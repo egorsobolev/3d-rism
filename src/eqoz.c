@@ -54,6 +54,11 @@ void plhnc_c(int n, const double *uuv, const double *tuv, double *cuv)
 }
 
 
+void null_solv(solv_t *solv)
+{
+	solv->charge = NULL;
+}
+
 int mk_solv(solv_t *solv, grid_t *g, water_t *water)
 {
 	int err;
@@ -103,6 +108,12 @@ int mk_solv(solv_t *solv, grid_t *g, water_t *water)
 void rm_solv(solv_t *solv)
 {
 	free(solv->charge);
+}
+
+
+void null_rism(rism_t * rism)
+{
+	rism->uuv = NULL;
 }
 
 
@@ -170,6 +181,50 @@ void rm_rism(rism_t *rism)
 }
 
 
+void null_lneq(lneq_t *ln)
+{
+	ln->dcdg = NULL;
+}
+
+int mk_lneq(lneq_t *ln, eqoz_t *eq)
+{
+	size_t natv, nr, nk, n, m;
+
+	natv = eq->solv.natv;
+	nr = eq->grid.nr;
+	nk = eq->grid.nk;
+	n = nr * natv;
+	m = nk * natv;
+
+	ln->natv = natv;
+	ln->symc = eq->solv.symc;
+	ln->lxvva = eq->solv.lxvva;
+	ln->xvva = eq->solv.xvva;
+	ln->indga = eq->solv.indga;
+	ln->grid = &eq->grid;
+
+	/*
+	 dcdg: float[n]
+	 jx_data: float[2 * m]
+	 solver_data: float[5 * n]
+	 */
+	ln->dcdg = (float *) malloc((6*n + 2*m) * sizeof(float));
+	if (!ln->dcdg)
+		return -1;
+
+	ln->jx_data = ln->dcdg + n;
+	ln->solver_data = ln->jx_data + 2*m;
+
+	return 0;
+}
+
+
+void rm_lneq(lneq_t *ln)
+{
+	free(ln->dcdg);
+}
+
+
 void print_mem_usage(grid_t *g, water_t *w, mol_t *m)
 {
 	meminfo_t ms, mn;
@@ -208,18 +263,30 @@ int mk_eqoz(eqoz_t *eq, box_t *box, water_t *water, mol_t *mol,
 	size_t eq_data_size;
 	walltime_t t0;
 
+	eq->grid.ia = NULL;
+	null_solv(&eq->solv);
+	null_rism(&eq->rism);
+	null_lneq(&eq->lneq);
+	eq->eq_data = NULL;
+
 	t0 = walltime();
 	if (ginit(box, &eq->grid)) {
 		printf(" GINIT : insufficient memory\n");
-		return -1;
+		return -2;
 	}
 	t0 = walltime() - t0;
 	print_mem_usage(&eq->grid, water, mol);
 	printf(" GINIT : Elapse %.2lf second(s)\n", t0 * 1e-6);
 
 	/* TODO: catch exceptions */
-	mk_solv(&eq->solv, &eq->grid, water);
-	mk_rism(&eq->rism, &eq->grid, water, mol, ljcut, ccut, spd, th);
+	if (mk_solv(&eq->solv, &eq->grid, water)) {
+		printf("MK_SOLV: insufficient memory\n");
+		return -3;
+	}
+	if (mk_rism(&eq->rism, &eq->grid, water, mol, ljcut, ccut, spd, th)) {
+		printf("MK_RISM: insufficient memory\n");
+		return -4;
+	}
 
 	natv = eq->solv.natv;
 	nr = eq->grid.nr;
@@ -234,9 +301,16 @@ int mk_eqoz(eqoz_t *eq, box_t *box, water_t *water, mol_t *mol,
 	solver_data_size = n * (2 * sizeof(float) + 3 * sizeof(double));
 	eq_data_size = (n + 2 * m) * sizeof(double);
 	eq->eq_data = (double *) malloc(solver_data_size + eq_data_size);
-	if (!eq->eq_data)
+	if (!eq->eq_data) {
+		printf("MK_EQOZ: insufficient memory\n");
 		return -1;
+	}
 	eq->solver_data = eq->eq_data + eq_data_size / sizeof(double);
+
+	if (mk_lneq(&eq->lneq, eq)) {
+		printf("MK_LNEQ: insufficient memory\n");
+		return -1;
+	}
 
 	return 0;
 }
@@ -244,6 +318,7 @@ int mk_eqoz(eqoz_t *eq, box_t *box, water_t *water, mol_t *mol,
 
 void rm_eqoz(eqoz_t *eq)
 {
+	rm_lneq(&eq->lneq);
 	free(eq->eq_data);
 	rm_rism(&eq->rism);
 	rm_solv(&eq->solv);
@@ -375,45 +450,6 @@ void eqoz(eqoz_t *eq, double *tuv, double *d, float *f)
 		src += nr;
 		tuv += nr;
 	}
-}
-
-
-int mk_lneq(lneq_t *ln, eqoz_t *eq)
-{
-	size_t natv, nr, nk, n, m;
-
-	natv = eq->solv.natv;
-	nr = eq->grid.nr;
-	nk = eq->grid.nk;
-	n = nr * natv;
-	m = nk * natv;
-
-	ln->natv = natv;
-	ln->symc = eq->solv.symc;
-	ln->lxvva = eq->solv.lxvva;
-	ln->xvva = eq->solv.xvva;
-	ln->indga = eq->solv.indga;
-	ln->grid = &eq->grid;
-
-	/*
-	 dcdg: float[n]
-	 jx_data: float[2 * m]
-	 solver_data: float[5 * n]
-	 */
-	ln->dcdg = (float *) malloc((6*n + 2*m) * sizeof(float));
-	if (!ln->dcdg)
-		return -1;
-
-	ln->jx_data = ln->dcdg + n;
-	ln->solver_data = ln->jx_data + 2*m;
-
-	return 0;
-}
-
-
-void rm_lneq(lneq_t *ln)
-{
-	free(ln->dcdg);
 }
 
 
