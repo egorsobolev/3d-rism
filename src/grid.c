@@ -157,97 +157,38 @@ int ginit(const box_t *b, grid_t *g)
 
 int mkdgrid(int n, int *nn, dgrid_t *p)
 {
-	int i;
+	size_t i, m;
 
-	p->n = n;
-	p->nn = calloc(n, sizeof(size_t));
-	if (!p->nn)
+	if (n > GRID_DIM)
 		return -1;
-	for (i = 0; i < n; ++i)
-		p->nn[i] = nn[n - i - 1];
-
-	p->b = p->nn[p->n - 1];
-	p->nr = p->b;
-	p->a = 2 * (p->b / 2 + 1);
-	p->nk = p->a;
-	for (i = p->n - 2; i >= 0; --i) {
-		p->nr *= p->nn[i];
-		p->nk *= p->nn[i];
+	p->n = n;
+	p->nn[n - 1] = nn[0];
+	m = 1;
+	for (i = 1; i < n; ++i) {
+		m *= nn[i];
+		p->nn[n - i - 1] = nn[i];
 	}
-	p->m = p->nk / p->a;
+	p->nr = nn[0] * m;
+	p->nk = 2 * (nn[0] / 2 + 1) * m;
 
-	p->data = (double*) malloc(2 * sizeof(double) * p->nk);
-	if (!p->data) {
-		free(p->nn);
-		return -2;
-	}
-	p->tmp = p->data + p->nk;
 	return 0;
 }
-
-void rmdgrid(dgrid_t *p)
-{
-	free(p->data);
-	free(p->nn);
-}
-
-void dgrid_fwd(dgrid_t *p)
-{
-	fft_r2c(p->n, p->nn, p->data, (complex_double *) p->tmp);
-	memcpy(p->data, p->tmp, sizeof(double) * p->nk);
-}
-
-void dgrid_bwd(dgrid_t *p)
-{
-	fft_c2r(p->n, p->nn, (complex_double *) p->data, p->tmp);
-	memcpy(p->data, p->tmp, sizeof(double) * p->nr);
-}
-
 
 int mkfgrid(int n, int *nn, fgrid_t *p)
 {
-	int i;
+	size_t i, m;
 
-	p->n = n;
-	p->nn = calloc(n, sizeof(int));
-	if (!p->nn)
+	if (n > GRID_DIM)
 		return -1;
-	for (i = 0; i < n; ++i)
-		p->nn[i] = nn[n - i - 1];
-
-	p->b = p->nn[p->n - 1];
-	p->nr = p->b;
-	p->a = 2 * (p->b / 2 + 1);
-	p->nk = p->a;
-	for (i = p->n - 2; i >= 0; --i) {
-		p->nr *= p->nn[i];
-		p->nk *= p->nn[i];
+	p->n = n;
+	p->nn[n - 1] = nn[0];
+	m = 1;
+	for (i = 1; i < n; ++i) {
+		m *= nn[i];
+		p->nn[n - i - 1] = nn[i];
 	}
-	p->m = p->nk / p->a;
+	p->nr = nn[0] * m;
+	p->nk = 2 * (nn[0] / 2 + 1) * m;
 
-	p->data = (float*) malloc(2 * sizeof(float) * p->nk);
-	if (!p->data) {
-		free(p->nn);
-		return -3;
-	}
-	p->tmp = p->data + p->nk;
 	return 0;
-}
-
-void rmfgrid(fgrid_t *p)
-{
-	free(p->data);
-	free(p->nn);
-}
-
-void fgrid_fwd(fgrid_t *p)
-{
-	fftf_r2c(p->n, p->nn, p->data, (complex_float *) p->tmp);
-	memcpy(p->data, p->tmp, sizeof(float) * p->nk);
-}
-
-void fgrid_bwd(fgrid_t *p)
-{
-	fftf_c2r(p->n, p->nn, (complex_float *) p->data, p->tmp);
-	memcpy(p->data, p->tmp, sizeof(float) * p->nr);
 }

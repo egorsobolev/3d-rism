@@ -338,13 +338,12 @@ int main(int argc, char **argv)
 			tuv[i++] = eq.rism.asymcr[k] * eq.solv.charge[j];
 
 	if (mkdgrid(3, g.n, &eq.grid)) {
-		printf("%s: insufficient memory\n", progname);
+		printf("%s: too many dimensions for grid\n", progname);
 		exitcode = 4;
 		goto exit6;
 	}
 	if (mkfgrid(3, g.n, &eq.lngr)) {
-		rmdgrid(&eq.grid);
-		printf("%s: insufficient memory\n", progname);
+		printf("%s: too many dimensions for grid\n", progname);
 		exitcode = 4;
 		goto exit6;
 	}
@@ -370,9 +369,6 @@ int main(int argc, char **argv)
 		goto exit6;
 	}
 	closure_c(g.nr * w.natom, eq.rism.uuv, tuv, cuv);
-
-	rmfgrid(&eq.lngr);
-	rmdgrid(&eq.grid);
 
 	cblas_daxpy(g.nr * w.natom, 1.0, cuv, 1, tuv, 1);
 

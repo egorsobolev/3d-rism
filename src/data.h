@@ -3,14 +3,12 @@
 
 typedef struct
 {
-	size_t n, m, a, b, nk, nr, *nn;
-	double *data, *tmp;
+	size_t n, nk, nr, *nn;
 } grid_d_t;
 
 typedef struct
 {
-	size_t n, m, a, b, nk, nr, *nn;
-	float *data, *tmp;
+	size_t n, nk, nr, *nn;
 } grid_f_t;
 
 typedef struct {

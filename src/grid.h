@@ -3,6 +3,8 @@
 
 #include <fft.h>
 
+#define GRID_DIM 3
+
 struct Box
 {
 	int n[3];
@@ -25,15 +27,13 @@ typedef struct Grid grid_t;
 
 struct GridJ
 {
-	size_t n, m, a, b, nk, nr, *nn;
-	double *data, *tmp;
+	size_t n, nk, nr, nn[GRID_DIM];
 };
 typedef struct GridJ dgrid_t;
 
 struct GridEQ
 {
-	size_t n, m, a, b, nk, nr, *nn;
-	float *data, *tmp;
+	size_t n, nk, nr, nn[GRID_DIM];
 };
 typedef struct GridEQ fgrid_t;
 
@@ -43,12 +43,6 @@ typedef struct GridEQ fgrid_t;
 void mkbox(const double *, const double *, const mol_t *, box_t *);
 int ginit(const box_t *, grid_t *);
 int mkdgrid(int n, int *nn, dgrid_t *p);
-void rmdgrid(dgrid_t *p);
-void dgrid_fwd(dgrid_t *p);
-void dgrid_bwd(dgrid_t *p);
 int mkfgrid(int n, int *nn, fgrid_t *p);
-void rmfgrid(fgrid_t *p);
-void fgrid_fwd(fgrid_t *p);
-void fgrid_bwd(fgrid_t *p);
 
 #endif //__RISM3D_GRID_H
