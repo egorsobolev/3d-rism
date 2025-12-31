@@ -59,7 +59,7 @@ void null_solv(solv_t *solv)
 	solv->charge = NULL;
 }
 
-int mk_solv(solv_t *solv, grid_t *g, water_t *water)
+int mk_solv(solv_t *solv, wvec_t *wvec, water_t *water)
 {
 	int err;
 	walltime_t t0;
@@ -73,14 +73,14 @@ int mk_solv(solv_t *solv, grid_t *g, water_t *water)
 	 xvva: double[3 * na]
 	 indga: unsigned int[nk]
 	 */
-	solv->charge = (double *) malloc(3 * (solv->natv + g->na) * sizeof(double) +
-	                                 g->nk * sizeof(int));
+	solv->charge = (double *) malloc(3 * (solv->natv + wvec->na) * sizeof(double) +
+	                                 wvec->nk2 * sizeof(int));
 	if (!solv->charge)
 		return -1;
 	solv->charge_sp = solv->charge + solv->natv;
 	solv->symc = solv->charge_sp + solv->natv;
 	solv->xvva = solv->symc + solv->natv;
-	solv->indga = (int *) (solv->xvva + 3 * g->na);
+	solv->indga = (int *) (solv->xvva + 3 * wvec->na);
 
 	/* NOTE: only water */
 	solv->charge[0] = water->m.q_h;
@@ -90,11 +90,11 @@ int mk_solv(solv_t *solv, grid_t *g, water_t *water)
 	solv->symc[0] = sqrt(water->n[0]);
 	solv->symc[1] = sqrt(water->n[1]);
 
-	solv->lxvva = g->na;
-	memcpy(solv->indga, g->ia, g->nk * sizeof(int));
+	solv->lxvva = wvec->na;
+	memcpy(solv->indga, wvec->ia, wvec->nk2 * sizeof(int));
 
 	t0 = walltime();
-	err = mkxvva(g, water, solv->xvva);
+	err = mkxvva(wvec, water, solv->xvva);
 	if (err == 1) {
 		printf(" MKXVVA: solvent functions are too short\n");
 		return -2;
@@ -120,7 +120,7 @@ void null_rism(rism_t * rism)
 }
 
 
-int mk_rism(rism_t *rism, grid_t *g, water_t *water, mol_t *mol,
+int mk_rism(rism_t *rism, grid_t *g, wvec_t *wvec, water_t *water, mol_t *mol,
             double ljcut, double ccut, int *spd, double th)
 {
 	size_t size, n, m;
@@ -169,7 +169,7 @@ int mk_rism(rism_t *rism, grid_t *g, water_t *water, mol_t *mol,
 	printf(" ASYMPR: Elapse %.2lf second(s)\n", (walltime() - t0) * 1e-6);
 
 	t0 = walltime();
-	asympk(g, water, mol, th, rism->asymck, rism->asymhk, rism->huvk0);
+	asympk(wvec, water, mol, th, rism->asymck, rism->asymhk, rism->huvk0);
 	printf(" ASYMPK: Elapse %.2lf second(s)\n", (walltime() - t0) * 1e-6);
 	printf("\n");
 
@@ -228,13 +228,13 @@ void rm_lneq(lneq_t *ln)
 }
 
 
-void print_mem_usage(grid_t *g, water_t *w, mol_t *m)
+void print_mem_usage(grid_t *g, wvec_t *wvec, water_t *w, mol_t *m)
 {
 	meminfo_t ms, mn;
 
-	ms.c = (3 * g->na + 3 * g->nk + 2 * g->nr + w->natom * g->nr + 6 * m->natom) * sizeof(double) + 
+	ms.c = (3 * wvec->na + 3 * g->nk + 2 * g->nr + w->natom * g->nr + 6 * m->natom) * sizeof(double) + 
 	       g->nk * (sizeof(int) + sizeof(float));
-	mn.c = ms.c + (g->na + 4 * g->nk + 3 * w->ngrid) * sizeof(double);
+	mn.c = ms.c + (wvec->na + 4 * g->nk + 3 * w->ngrid) * sizeof(double);
 
 	ms.nr = (4 * sizeof(double) + 3 * sizeof(float)) * g->nr * w->natom;
 	mn.nr = ms.nr + ms.c;
@@ -264,31 +264,36 @@ int mk_eqoz(eqoz_t *eq, box_t *box, water_t *water, mol_t *mol,
 	size_t natv, nk, nr, m, n;
 	size_t solver_data_size;
 	size_t eq_data_size;
+	wvec_t wvec;
 	walltime_t t0;
 
+	null_wavevectors(&wvec);
 	null_solv(&eq->solv);
 	null_rism(&eq->rism);
 	null_lneq(&eq->lneq);
 	eq->eq_data = NULL;
 
+	grid_init(box, &eq->grid);
+
 	t0 = walltime();
-	if (ginit(box, &eq->grid)) {
-		printf(" GINIT : insufficient memory\n");
+	if (mk_wavevectors(&eq->grid, &wvec)) {
+		printf(" MK_WAVEVECTORS : insufficient memory\n");
 		return -2;
 	}
+	printf(" && %ld, %lf\n", wvec.na, wvec.v2[wvec.na - 2]);
 	t0 = walltime() - t0;
-	print_mem_usage(&eq->grid, water, mol);
+	print_mem_usage(&eq->grid, &wvec, water, mol);
 	printf(" GINIT : Elapse %.2lf second(s)\n", t0 * 1e-6);
 
 	/* TODO: catch exceptions */
-	if (mk_solv(&eq->solv, &eq->grid, water)) {
+	if (mk_solv(&eq->solv, &wvec, water)) {
 		printf("MK_SOLV: insufficient memory\n");
-		rm_grid_wvec(&eq->grid);
+		rm_wavevectors(&wvec);
 		return -3;
 	}
-	if (mk_rism(&eq->rism, &eq->grid, water, mol, ljcut, ccut, spd, th)) {
+	if (mk_rism(&eq->rism, &eq->grid, &wvec, water, mol, ljcut, ccut, spd, th)) {
 		printf("MK_RISM: insufficient memory\n");
-		rm_grid_wvec(&eq->grid);
+		rm_wavevectors(&wvec);
 		return -4;
 	}
 
@@ -307,18 +312,18 @@ int mk_eqoz(eqoz_t *eq, box_t *box, water_t *water, mol_t *mol,
 	eq->eq_data = (double *) malloc(solver_data_size + eq_data_size);
 	if (!eq->eq_data) {
 		printf("MK_EQOZ: insufficient memory\n");
-		rm_grid_wvec(&eq->grid);
+		rm_wavevectors(&wvec);
 		return -1;
 	}
 	eq->solver_data = eq->eq_data + eq_data_size / sizeof(double);
 
 	if (mk_lneq(&eq->lneq, eq)) {
 		printf("MK_LNEQ: insufficient memory\n");
-		rm_grid_wvec(&eq->grid);
+		rm_wavevectors(&wvec);
 		return -1;
 	}
 
-	rm_grid_wvec(&eq->grid);
+	rm_wavevectors(&wvec);
 	return 0;
 }
 

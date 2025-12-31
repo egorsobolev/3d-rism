@@ -3,6 +3,7 @@
 
 #include <stdlib.h>
 #include <string.h>
+#include <stdio.h>
 
 #define _USE_MATH_DEFINES
 #include <math.h>
@@ -47,18 +48,37 @@ void mkbox(const double *gsp, const double *margin, const mol_t *m, box_t *b)
 	}
 }
 
-int ginit(const box_t *b, grid_t *g)
+
+void grid_init(const box_t *b, grid_t *g)
 {
-	size_t n[] = { b->n[0] / 2 + 1, b->n[1], b->n[2] };
+	int i;
+	for (i = 0; i < 3; ++i) {
+		/* copy box parameters */
+		g->l[i] = b->l[i];
+		g->n[i] = b->n[i];
+		g->s[i] = b->s[i];
+		g->fft_shape[i] = b->n[2 - i];
+	}
+	g->nr = g->n[0] * g->n[1] * g->n[2];
+	g->nk2 = (g->n[0] / 2 + 1) * g->n[1] * g->n[2];
+	g->nk = 2 * g->nk2;
+	g->volume = g->l[0] * g->l[1] * g->l[2];
+}
+
+
+void null_wavevectors(wvec_t *wvec)
+{
+	wvec->a = wvec->v2 = NULL;
+}
+
+int mk_wavevectors(grid_t *g, wvec_t *wvec)
+{
+	int n[] = { g->n[0] / 2 + 1, g->n[1], g->n[2] };
 	double a, dk, *k, *kx, *ky, *kz, *g2, *gv, *ga;
 	int l, i, j, x, y, z, k0, *ig2, *iga, *index_fwd;
 	size_t nk;
 
-	g->a = g->v2 = NULL;
-
-	/* (nx / 2 + 1) * ny * nz */
-	/* 2 * (nx / 2 + 1) * ny * nz */
-	nk = n[0] * n[1] * n[2];
+	nk = g->nk2;
 
 	/* local arrays
 	 kx: double[n0] - wave coord x
@@ -91,16 +111,12 @@ int ginit(const box_t *b, grid_t *g)
 	/* preprocess */
 	l = 0;
 	for (j = 0; j < 3; ++j) {
-		/* copy box parameters */
-		g->l[j] = b->l[j];
-		g->n[j] = b->n[j];
-		g->s[j] = b->s[j];
-		g->fft_shape[j] = b->n[2 - j];
 		/* make wave coordinates */
-		dk = 2. * M_PI / b->l[j];
+		dk = 2. * M_PI / g->l[j];
 		k0 = n[j] / 2 - 1;
-		for (i = 0; i < n[j]; ++i)
-			k[l++] = dk * (k0 - (k0 + i) % b->n[j]);
+		for (i = 0; i < n[j]; ++i) {
+			k[l++] = dk * (k0 - (k0 + i) % (int) g->n[j]);
+		}
 	}
 
 	/* fill grid by wave vectors */
@@ -150,14 +166,13 @@ int ginit(const box_t *b, grid_t *g)
 		ga[i] = sqrt(g2[ig2[i]]);
 
 	/* fill Grid structure */
-	g->nr = b->n[0] * b->n[1] * b->n[2];
-	g->nk2 = nk;
-	g->nk = 2 * nk;
-	g->na = l;
-	g->a = ga;
-	g->ia = iga;
-	g->v = gv;
-	g->v2 = g2;
+	wvec->nk2 = nk;
+	wvec->na = l;
+	wvec->volume = g->volume;
+	wvec->a = ga;
+	wvec->ia = iga;
+	wvec->v = gv;
+	wvec->v2 = g2;
 
 	/* deallocate memory */
 	free(k);
@@ -165,8 +180,9 @@ int ginit(const box_t *b, grid_t *g)
 	return 0;
 }
 
-void rm_grid_wvec(grid_t *g)
+
+void rm_wavevectors(wvec_t *wvec)
 {
-	free(g->a);
-	free(g->v2);
+	free(wvec->a);
+	free(wvec->v2);
 }
