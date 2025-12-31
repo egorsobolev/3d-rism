@@ -26,10 +26,10 @@ typedef struct {
 } rism_t;
 
 typedef struct {
-	int natv;
+	size_t natv;
 	double *xvva;
-	unsigned int *indga;
-	int lxvva;
+	int *indga;
+	size_t lxvva;
 	double *charge;
 	double *charge_sp;
 	double *symc;
@@ -40,11 +40,11 @@ typedef struct {
 #include "mol.h"
 
 typedef struct {
-	int natv, lxvva;
+	size_t natv, lxvva;
 	double *symc;
 	float *dcdg;
 	double *xvva; /* float *xvva; */
-	unsigned int *indga;
+	int *indga;
 	grid_t *grid;
 	/* private */
 	float *solver_data;

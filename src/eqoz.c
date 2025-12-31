@@ -71,13 +71,16 @@ int mk_solv(solv_t *solv, grid_t *g, water_t *water)
 	 charge_sp: double[natv]
 	 symc: double[natv]
 	 xvva: double[3 * na]
+	 indga: unsigned int[nk]
 	 */
-	solv->charge = (double *) malloc(3 * (solv->natv + g->na) * sizeof(double));
+	solv->charge = (double *) malloc(3 * (solv->natv + g->na) * sizeof(double) +
+	                                 g->nk * sizeof(int));
 	if (!solv->charge)
 		return -1;
 	solv->charge_sp = solv->charge + solv->natv;
 	solv->symc = solv->charge_sp + solv->natv;
 	solv->xvva = solv->symc + solv->natv;
+	solv->indga = (int *) (solv->xvva + 3 * g->na);
 
 	/* NOTE: only water */
 	solv->charge[0] = water->m.q_h;
@@ -88,7 +91,7 @@ int mk_solv(solv_t *solv, grid_t *g, water_t *water)
 	solv->symc[1] = sqrt(water->n[1]);
 
 	solv->lxvva = g->na;
-	solv->indga = (unsigned int *) g->ia;
+	memcpy(solv->indga, g->ia, g->nk * sizeof(int));
 
 	t0 = walltime();
 	err = mkxvva(g, water, solv->xvva);
@@ -263,7 +266,6 @@ int mk_eqoz(eqoz_t *eq, box_t *box, water_t *water, mol_t *mol,
 	size_t eq_data_size;
 	walltime_t t0;
 
-	eq->grid.ia = NULL;
 	null_solv(&eq->solv);
 	null_rism(&eq->rism);
 	null_lneq(&eq->lneq);
@@ -281,10 +283,12 @@ int mk_eqoz(eqoz_t *eq, box_t *box, water_t *water, mol_t *mol,
 	/* TODO: catch exceptions */
 	if (mk_solv(&eq->solv, &eq->grid, water)) {
 		printf("MK_SOLV: insufficient memory\n");
+		rm_grid_wvec(&eq->grid);
 		return -3;
 	}
 	if (mk_rism(&eq->rism, &eq->grid, water, mol, ljcut, ccut, spd, th)) {
 		printf("MK_RISM: insufficient memory\n");
+		rm_grid_wvec(&eq->grid);
 		return -4;
 	}
 
@@ -303,15 +307,18 @@ int mk_eqoz(eqoz_t *eq, box_t *box, water_t *water, mol_t *mol,
 	eq->eq_data = (double *) malloc(solver_data_size + eq_data_size);
 	if (!eq->eq_data) {
 		printf("MK_EQOZ: insufficient memory\n");
+		rm_grid_wvec(&eq->grid);
 		return -1;
 	}
 	eq->solver_data = eq->eq_data + eq_data_size / sizeof(double);
 
 	if (mk_lneq(&eq->lneq, eq)) {
 		printf("MK_LNEQ: insufficient memory\n");
+		rm_grid_wvec(&eq->grid);
 		return -1;
 	}
 
+	rm_grid_wvec(&eq->grid);
 	return 0;
 }
 
@@ -322,7 +329,6 @@ void rm_eqoz(eqoz_t *eq)
 	free(eq->eq_data);
 	rm_rism(&eq->rism);
 	rm_solv(&eq->solv);
-	free(eq->grid.ia);
 }
 
 

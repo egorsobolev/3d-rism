@@ -15,8 +15,8 @@ typedef struct Box box_t;
 
 struct Grid
 {
-	int nr, nk, nk2, na;
-	int n[3];
+	size_t nr, nk, nk2, na;
+	size_t n[3];
 	size_t fft_shape[3];
 	double l[3], s[3];
 	double *v;
@@ -31,5 +31,6 @@ typedef struct Grid grid_t;
 
 void mkbox(const double *, const double *, const mol_t *, box_t *);
 int ginit(const box_t *, grid_t *);
+void rm_grid_wvec(grid_t *);
 
 #endif //__RISM3D_GRID_H

@@ -205,8 +205,6 @@ int main(int argc, char **argv)
 		goto exit3;
 	}
 
-	free(eq.grid.a);
-	free(eq.grid.v2);
 	/*
 	if (pfile->count) {
 		f = fopen(pfile->filename[0], "wb");

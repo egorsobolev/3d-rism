@@ -49,41 +49,44 @@ void mkbox(const double *gsp, const double *margin, const mol_t *m, box_t *b)
 
 int ginit(const box_t *b, grid_t *g)
 {
-	int n[] = { b->n[0] / 2 + 1, b->n[1], b->n[2] };
+	size_t n[] = { b->n[0] / 2 + 1, b->n[1], b->n[2] };
 	double a, dk, *k, *kx, *ky, *kz, *g2, *gv, *ga;
-	int l, i, j, nk, x, y, z, k0, *ig2, *iga;
+	int l, i, j, x, y, z, k0, *ig2, *iga, *index_fwd;
+	size_t nk;
+
+	g->a = g->v2 = NULL;
 
 	/* (nx / 2 + 1) * ny * nz */
 	/* 2 * (nx / 2 + 1) * ny * nz */
 	nk = n[0] * n[1] * n[2];
 
-	k = (double *) calloc(n[0] + n[1] + n[2], sizeof(double));
+	/* local arrays
+	 kx: double[n0] - wave coord x
+	 ky: + double[n1] - wave coord y
+	 kz: + double[n2] - wave coord z
+	 ig2: + int[nk] - ascending index full / inverse index
+	 index_fwd: + int[nk] - forward index (original -> unique)
+	 */
+	k = (double *) malloc((n[0] + n[1] + n[2]) * sizeof(double) +
+	                      2 * nk * sizeof(int));
 	if (!k) return -1;
 	kx = k;
 	ky = kx + n[0];
 	kz = ky + n[1];
 
-	ig2 = (int *) calloc(nk, sizeof(int));
-	if (!ig2) {
-		free(k);
-		return -1;
-	}
+	ig2 = (int *) (kz + n[2]);
+	index_fwd = ig2 + nk;
 
+	/* wave vectors
+	 g2: double[nk] (short v2) - squared wave vector
+	 gv: + double[3*nk] (short v) - wave vector
+	 */
 	g2 = (double *) calloc(4 * nk, sizeof(double));
-	if (!g2) {
+	if (!g2) {;
 		free(k);
-		free(ig2);
 		return -1;
 	}
 	gv = g2 + nk;
-
-	iga = (int *) calloc(nk, sizeof(int));
-	if (!iga) {
-		free(k);
-		free(ig2);
-		free(g2);
-		return -1;
-	}
 
 	/* preprocess */
 	l = 0;
@@ -119,25 +122,32 @@ int ginit(const box_t *b, grid_t *g)
 	/* make index regenerating g2 from sorted unique wave lengths */
 	l = 0;
 	a = g2[ig2[0]];
+	index_fwd[ig2[0]] = 0;
 	for (i = 1; i < nk; ++i) {
 		if (g2[ig2[i]] != a) {
 			++l;
 			a = g2[ig2[i]];
+			ig2[l] = ig2[i];  // unique -> original
 		}
-		iga[ig2[i]] = l;
+		index_fwd[ig2[i]] = l;  // forward index (original -> unique)
 	}
 	++l;
-	/* make sorted unique array of wave lengths */
-	ga = (double *) calloc(l, sizeof(double));
+
+	/* make sorted unique array of wave lengths 
+	 ga: double[na] - modules of wave vectors
+	 iga: int[nk] - index
+	 */
+	ga = (double *) malloc(l * sizeof(double) + nk * sizeof(int));
 	if (!ga) {
 		free(k);
-		free(ig2);
 		free(g2);
-		free(iga);
 		return -1;
 	}
-	for (i = 0; i < nk; ++i)
-		ga[iga[i]] = sqrt(g2[i]);
+	iga = (int *) (ga + l);
+
+	memcpy(iga, index_fwd, nk * sizeof(int));
+	for (i = 0; i < l; i++)
+		ga[i] = sqrt(g2[ig2[i]]);
 
 	/* fill Grid structure */
 	g->nr = b->n[0] * b->n[1] * b->n[2];
@@ -151,7 +161,12 @@ int ginit(const box_t *b, grid_t *g)
 
 	/* deallocate memory */
 	free(k);
-	free(ig2);
 
 	return 0;
+}
+
+void rm_grid_wvec(grid_t *g)
+{
+	free(g->a);
+	free(g->v2);
 }
