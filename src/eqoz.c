@@ -266,7 +266,6 @@ int mk_eqoz(eqoz_t *eq, box_t *box, water_t *water, mol_t *mol,
 		printf(" MK_WAVEVECTORS : insufficient memory\n");
 		return -2;
 	}
-	printf(" && %ld, %lf\n", wvec.na, wvec.v2[wvec.na - 2]);
 	t0 = walltime() - t0;
 	print_mem_usage(&eq->grid, &wvec, water, mol);
 	printf(" GINIT : Elapse %.2lf second(s)\n", t0 * 1e-6);
