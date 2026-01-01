@@ -11,6 +11,7 @@ typedef struct Molecule mol_t;
 #include "grid.h"
 
 int molread(const char *, mol_t *);
+void null_mol(mol_t *m);
 void rm_mol(mol_t *);
 void molcenter(const box_t *, mol_t *);
 

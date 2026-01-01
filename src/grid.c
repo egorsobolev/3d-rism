@@ -8,6 +8,7 @@
 #define _USE_MATH_DEFINES
 #include <math.h>
 
+
 void mkbox(const double *gsp, const double *margin, const mol_t *m, box_t *b)
 {
 	double mn, mx, l, *x;
@@ -48,7 +49,6 @@ void mkbox(const double *gsp, const double *margin, const mol_t *m, box_t *b)
 	}
 }
 
-
 void grid_init(const box_t *b, grid_t *g)
 {
 	int i;
@@ -63,12 +63,6 @@ void grid_init(const box_t *b, grid_t *g)
 	g->nk2 = (g->n[0] / 2 + 1) * g->n[1] * g->n[2];
 	g->nk = 2 * g->nk2;
 	g->volume = g->l[0] * g->l[1] * g->l[2];
-}
-
-
-void null_wavevectors(wvec_t *wvec)
-{
-	wvec->a = wvec->v2 = NULL;
 }
 
 int mk_wavevectors(grid_t *g, wvec_t *wvec)
@@ -180,6 +174,10 @@ int mk_wavevectors(grid_t *g, wvec_t *wvec)
 	return 0;
 }
 
+void null_wavevectors(wvec_t *wvec)
+{
+	wvec->a = wvec->v2 = NULL;
+}
 
 void rm_wavevectors(wvec_t *wvec)
 {

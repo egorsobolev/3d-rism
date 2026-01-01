@@ -21,14 +21,12 @@ void hnc(int n, const double *uuv, const double *tuv, double *cuv, float *f)
 	}
 }
 
-
 void hnc_c(int n, const double *uuv, const double *tuv, double *cuv)
 {
 	int i;
 	for (i = 0; i < n; ++i)
 		cuv[i] = exp(tuv[i] - uuv[i]) - 1.0 - tuv[i];
 }
-
 
 void plhnc(int n, const double *uuv, const double *tuv, double *cuv, float *f)
 {
@@ -42,7 +40,6 @@ void plhnc(int n, const double *uuv, const double *tuv, double *cuv, float *f)
 	}
 }
 
-
 void plhnc_c(int n, const double *uuv, const double *tuv, double *cuv)
 {
 	int i;
@@ -51,12 +48,6 @@ void plhnc_c(int n, const double *uuv, const double *tuv, double *cuv)
 		a = tuv[i] - uuv[i];
 		cuv[i] = exp((a < 0.0) * a) + (a >= 0.0) * a - 1.0 - tuv[i];
 	}
-}
-
-
-void null_solv(solv_t *solv)
-{
-	solv->charge = NULL;
 }
 
 int mk_solv(solv_t *solv, wvec_t *wvec, water_t *water)
@@ -107,18 +98,15 @@ int mk_solv(solv_t *solv, wvec_t *wvec, water_t *water)
 	return 0;
 }
 
+void null_solv(solv_t *solv)
+{
+	solv->charge = NULL;
+}
 
 void rm_solv(solv_t *solv)
 {
 	free(solv->charge);
 }
-
-
-void null_rism(rism_t * rism)
-{
-	rism->uuv = NULL;
-}
-
 
 int mk_rism(rism_t *rism, grid_t *g, wvec_t *wvec, water_t *water, mol_t *mol,
             double ljcut, double ccut, int *spd, double th)
@@ -177,16 +165,14 @@ int mk_rism(rism_t *rism, grid_t *g, wvec_t *wvec, water_t *water, mol_t *mol,
 	return 0;
 }
 
+void null_rism(rism_t * rism)
+{
+	rism->uuv = NULL;
+}
 
 void rm_rism(rism_t *rism)
 {
 	free(rism->uuv);
-}
-
-
-void null_lneq(lneq_t *ln)
-{
-	ln->dcdg = NULL;
 }
 
 int mk_lneq(lneq_t *ln, eqoz_t *eq)
@@ -221,6 +207,10 @@ int mk_lneq(lneq_t *ln, eqoz_t *eq)
 	return 0;
 }
 
+void null_lneq(lneq_t *ln)
+{
+	ln->dcdg = NULL;
+}
 
 void rm_lneq(lneq_t *ln)
 {
@@ -268,10 +258,6 @@ int mk_eqoz(eqoz_t *eq, box_t *box, water_t *water, mol_t *mol,
 	walltime_t t0;
 
 	null_wavevectors(&wvec);
-	null_solv(&eq->solv);
-	null_rism(&eq->rism);
-	null_lneq(&eq->lneq);
-	eq->eq_data = NULL;
 
 	grid_init(box, &eq->grid);
 
@@ -327,6 +313,13 @@ int mk_eqoz(eqoz_t *eq, box_t *box, water_t *water, mol_t *mol,
 	return 0;
 }
 
+void null_eqoz(eqoz_t *eq)
+{
+	null_solv(&eq->solv);
+	null_rism(&eq->rism);
+	null_lneq(&eq->lneq);
+	eq->eq_data = NULL;
+}
 
 void rm_eqoz(eqoz_t *eq)
 {

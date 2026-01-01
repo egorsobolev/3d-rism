@@ -145,6 +145,11 @@ int waterread(const char *fn, water_t *w)
 	return 0;
 }
 
+void null_water(water_t *w)
+{
+	w->xvv = NULL;
+}
+
 void rm_water(water_t *w)
 {
 	free(w->xvv);

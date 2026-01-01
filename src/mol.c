@@ -34,7 +34,7 @@ int molread(const char *fn, mol_t *m)
 				c = fgetc(f);
 		}
 	}
-	x = (double *) calloc(n * 6, sizeof(double));
+	x = (double *) malloc(6 * n * sizeof(double));
 	if (!x)
 		return 3;
 
@@ -74,6 +74,11 @@ int molread(const char *fn, mol_t *m)
 	m->e = m->q + n;
 
 	return 0;
+}
+
+void null_mol(mol_t *m)
+{
+	m->x = NULL;
 }
 
 void rm_mol(mol_t *m)

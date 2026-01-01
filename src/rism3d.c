@@ -84,12 +84,16 @@ int main(int argc, char **argv)
 
 	int nit, flag, nprefix;
 
+	cuv = tuv = NULL;
+	null_water(&w);
+	null_mol(&m);
+	null_eqoz(&eq);
+
 	if (arg_nullcheck(argtable) != 0)
 	{
 		/* NULL entries were detected, some allocations must have failed */
 		printf("%s: insufficient memory\n", progname);
-		exitcode = 1;
-		goto exit1;
+		exit(1);
 	}
 	/* set any command line default values prior to parsing */
 	closure->sval[0] = "PLHNC";
@@ -180,7 +184,7 @@ int main(int argc, char **argv)
 	if (waterread(wfile->filename[0], &w)) {
 		printf("Cannot read water data from file '%s'\n", wfile->filename[0]);
 		exitcode = 3;
-		goto exit2;
+		goto exit1;
 	}
 	/* Water force constants from Kovalenko */
 	/*
@@ -202,7 +206,7 @@ int main(int argc, char **argv)
 	// TODO: check exit code and raise exception
 	if (mk_eqoz(&eq, &b, &w, &m, ljcut->dval[0], ccut->dval[0], spd, th)) {
 		exitcode = 5;
-		goto exit3;
+		goto exit1;
 	}
 
 	/*
@@ -220,7 +224,7 @@ int main(int argc, char **argv)
 	if (!tuv) {
 		printf("%s: insufficient memory\n", progname);
 		exitcode = 4;
-		goto exit4;
+		goto exit1;
 	}
 	i = 0;
 	for (j = 0; j < w.natom; ++j)
@@ -237,15 +241,15 @@ int main(int argc, char **argv)
 		else if (flag == 2)
 			printf("NR: no convergence of armigo.\n");
 
-		goto exit5;
+		goto exit1;
 	}
 	printf("\n");
 
 	cuv = (double *) calloc(eq.grid.nr * w.natom, sizeof(double));
 	if (!cuv) {
 		printf("%s: insufficient memory\n", progname);
-		exitcode = 4;
-		goto exit5;
+		exitcode = 1;
+		goto exit1;
 	}
 	closure_c(eq.grid.nr * w.natom, eq.rism.uuv, tuv, cuv);
 
@@ -281,7 +285,7 @@ int main(int argc, char **argv)
 		if (!lvl) {
 			printf("%s: insufficient memory\n", progname);
 			exitcode = 4;
-			goto exit5;
+			goto exit1;
 		}
 		mx = lvl + w.natom;
 		memset(bj.s, 0, 9 * sizeof(double));
@@ -318,15 +322,11 @@ int main(int argc, char **argv)
 		}
 		free(lvl);
 	}
-exit5:
-	free(tuv);
-exit4:
-	rm_eqoz(&eq);
-exit3:
-	rm_water(&w);
-exit2:
-	rm_mol(&m);
 exit1:
+	free(tuv);
+	rm_eqoz(&eq);
+	rm_water(&w);
+	rm_mol(&m);
 	arg_freetable(argtable, sizeof(argtable) / sizeof(argtable[0])); 
 	exit(exitcode);
 }

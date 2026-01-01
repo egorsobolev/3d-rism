@@ -69,6 +69,7 @@ void plhnc(int n, const double *uuv, const double *tuv, double *cuv, float *f);
 void plhnc_c(int n, const double *uuv, const double *tuv, double *cuv);
 int mk_eqoz(eqoz_t *eq, box_t *g, water_t *water, mol_t *mol,
             double ljcut, double ccut, int *spd, double th);
+void null_eqoz(eqoz_t *eq);
 void rm_eqoz(eqoz_t *eq);
 void eqoz(eqoz_t *eq, double *tuv, double *d, float *f);
 int mk_lneq(lneq_t *ln, eqoz_t *eq);

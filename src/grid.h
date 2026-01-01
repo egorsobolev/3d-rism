@@ -38,8 +38,8 @@ typedef struct WaveVectors wvec_t;
 
 void mkbox(const double *, const double *, const mol_t *, box_t *);
 void grid_init(const box_t *, grid_t *);
-void null_wavevectors(wvec_t *);
 int mk_wavevectors(grid_t *, wvec_t *);
+void null_wavevectors(wvec_t *);
 void rm_wavevectors(wvec_t *);
 
 #endif //__RISM3D_GRID_H
