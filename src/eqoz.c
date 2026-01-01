@@ -50,6 +50,12 @@ void plhnc_c(int n, const double *uuv, const double *tuv, double *cuv)
 	}
 }
 
+size_t nbytes_solv(wvec_t *wvec, size_t natom_solv)
+{
+	return 3 * (natom_solv + wvec->na) * sizeof(double) +
+	       wvec->nk2 * sizeof(int);
+}
+
 int mk_solv(solv_t *solv, wvec_t *wvec, water_t *water)
 {
 	int err;
@@ -64,8 +70,7 @@ int mk_solv(solv_t *solv, wvec_t *wvec, water_t *water)
 	 xvva: double[3 * na]
 	 indga: unsigned int[nk]
 	 */
-	solv->charge = (double *) malloc(3 * (solv->natv + wvec->na) * sizeof(double) +
-	                                 wvec->nk2 * sizeof(int));
+	solv->charge = (double *) malloc(nbytes_solv(wvec, water->natom));
 	if (!solv->charge)
 		return -1;
 	solv->charge_sp = solv->charge + solv->natv;
@@ -108,6 +113,12 @@ void rm_solv(solv_t *solv)
 	free(solv->charge);
 }
 
+size_t nbytes_rism(grid_t *g, size_t natom_solv)
+{
+	return sizeof(double) * (natom_solv * g->nr +
+	                         2 * (g->nr + g->nk + natom_solv));
+}
+
 int mk_rism(rism_t *rism, grid_t *g, wvec_t *wvec, water_t *water, mol_t *mol,
             double ljcut, double ccut, int *spd, double th)
 {
@@ -129,8 +140,7 @@ int mk_rism(rism_t *rism, grid_t *g, wvec_t *wvec, water_t *water, mol_t *mol,
 	u0 = (double *) malloc(g->nr * sizeof(double));
 	if (!u0) return -1;
 
-	size = n + 2 * (g->nr + g->nk + water->natom);
-	rism->uuv = (double *) malloc(size * sizeof(double));
+	rism->uuv = (double *) malloc(nbytes_rism(g, water->natom));
 	if (!rism->uuv) {
 		free(u0);
 		return -1;
@@ -175,6 +185,17 @@ void rm_rism(rism_t *rism)
 	free(rism->uuv);
 }
 
+
+size_t nbytes_jx(grid_t *g, size_t natom_solv)
+{
+	return (g->nr + 2*g->nk) * natom_solv * sizeof(float);
+}
+
+size_t nbytes_lnsolver(grid_t *g, size_t natom_solv)
+{
+	return 5 * g->nr * natom_solv * sizeof(float);
+}
+
 int mk_lneq(lneq_t *ln, eqoz_t *eq)
 {
 	size_t natv, nr, nk, n, m;
@@ -197,7 +218,8 @@ int mk_lneq(lneq_t *ln, eqoz_t *eq)
 	 jx_data: float[2 * m]
 	 solver_data: float[5 * n]
 	 */
-	ln->dcdg = (float *) malloc((6*n + 2*m) * sizeof(float));
+	ln->dcdg = (float *) malloc(nbytes_jx(ln->grid, natv) +
+	                            nbytes_lnsolver(ln->grid, natv));
 	if (!ln->dcdg)
 		return -1;
 
@@ -218,27 +240,41 @@ void rm_lneq(lneq_t *ln)
 }
 
 
+size_t nbytes_constants(grid_t *g, wvec_t *wvec, size_t natom_solv)
+{
+	return nbytes_solv(wvec, natom_solv) + nbytes_rism(g, natom_solv);
+}
+
+size_t nbytes_nr(grid_t *g, size_t natom_solv)
+{
+	return natom_solv * g->nr * (2 * sizeof(float) + 3 * sizeof(double));
+}
+
+size_t nbytes_eq(grid_t *g, size_t natom_solv)
+{
+	return natom_solv * (g->nr + 2 * g->nk) * sizeof(double);
+}
+
 void print_mem_usage(grid_t *g, wvec_t *wvec, water_t *w, mol_t *m)
 {
 	meminfo_t ms, mn;
 
-	ms.c = (3 * wvec->na + 3 * g->nk + 2 * g->nr + w->natom * g->nr + 6 * m->natom) * sizeof(double) + 
-	       g->nk * (sizeof(int) + sizeof(float));
-	mn.c = ms.c + (wvec->na + 4 * g->nk + 3 * w->ngrid) * sizeof(double);
+	ms.c = nbytes_constants(g, wvec, w->natom) >> 20;
+	mn.c = ms.c;
 
-	ms.nr = (4 * sizeof(double) + 3 * sizeof(float)) * g->nr * w->natom;
-	mn.nr = ms.nr + ms.c;
+	ms.nr = nbytes_nr(g, w->natom) >> 20;
+	mn.nr = mn.c + ms.nr;
 
-	ms.eq = (2 * g->nk + g->nr) * sizeof(double) * w->natom;
+	ms.eq = nbytes_eq(g, w->natom) >> 20;
 	mn.eq = mn.nr + ms.eq;
 
-	ms.lsolv = 5 * g->nr * sizeof(float) * w->natom;
+	ms.lsolv = nbytes_lnsolver(g, w->natom) >> 20;
 	mn.lsolv = mn.nr + ms.lsolv;
 
-	ms.jx = 2 * g->nk * sizeof(float) * w->natom;
-	mn.jx = mn.lsolv + ms.jx;
+	ms.jx = nbytes_jx(g, w->natom) >> 20;
+	mn.jx = mn.nr + ms.eq + ms.lsolv + ms.jx;
 
-	printf(" MEMORY            self, B       net, B\n");
+	printf(" MEMORY          self, MiB     net, MiB\n");
 	printf("  constants   %12ld %12ld\n", ms.c, mn.c);
 	printf("   NR         %12ld %12ld\n", ms.nr, mn.nr);
 	printf("    EQ        %12ld %12ld\n", ms.eq, mn.eq);
@@ -246,7 +282,6 @@ void print_mem_usage(grid_t *g, wvec_t *wvec, water_t *w, mol_t *m)
 	printf("     Jx       %12ld %12ld\n", ms.jx, mn.jx);
 	printf("\n");
 }
-
 
 int mk_eqoz(eqoz_t *eq, box_t *box, water_t *water, mol_t *mol,
             double ljcut, double ccut, int *spd, double th)
