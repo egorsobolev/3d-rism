@@ -9,6 +9,7 @@
 #define _USE_MATH_DEFINES
 #include <math.h>
 #include <cblas.h>
+#include <fft.h>
 
 #include "mol.h"
 #include "water.h"
@@ -49,6 +50,7 @@ int main(int argc, char **argv)
 	struct arg_dbl *ath = arg_dbl0(NULL, "ath", NULL, "parameter for coarsening asymptotics (default: 1e-7)");
 	/*struct arg_file *pfile = arg_file0("p", NULL, NULL, "file with/for prepared equation data");*/
 	struct arg_int *iso	= arg_intn("l", NULL, NULL, 0, 10, "isosurface level in percent of maximum (up to 10 levels)");
+	struct arg_int *nthr = arg_int0("n", "nthreads", NULL, "number of threads (default: 1)");
 	struct arg_lit *help  = arg_lit0(NULL, "help", "print this help and exit");
 	struct arg_lit *vers  = arg_lit0(NULL, "version", "print version information and exit");
 	struct arg_file *rtxt = arg_file1(NULL, NULL, "<molecule>", NULL);
@@ -61,6 +63,7 @@ int main(int argc, char **argv)
 		ljcut, ccut,
 		thinn, thx, thy, thz,
 		ath, /*pfile, */iso,
+		nthr,
 		help, vers,
 		rtxt,
 		end
@@ -105,6 +108,7 @@ int main(int argc, char **argv)
 	ccut->dval[0] = 10.0;
 	thinn->ival[0] = 2;
 	ath->dval[0] = 1e-7;
+	nthr->ival[0] = 1;
 
 	/* Parse the command line as defined by argtable[] */
 	nerrors = arg_parse(argc, argv, argtable);
@@ -131,6 +135,9 @@ int main(int argc, char **argv)
 		exitcode = 1;
 		goto exit1;
 	}
+
+	openblas_set_num_threads(nthr->ival[0]);
+	cpocketfft_set_num_threads(nthr->ival[0]);
 
 	nprefix = (int) (rtxt->extension[0] - rtxt->basename[0]);
 	if (nprefix > 19) nprefix = 19;
