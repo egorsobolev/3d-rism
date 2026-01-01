@@ -26,16 +26,6 @@
 #define strcasecmp _stricmp
 #endif
 
-struct MEMORYINFO
-{
-	size_t c;
-	size_t nr;
-	size_t eq;
-	size_t lsolv;
-	size_t jx;
-};
-typedef struct MEMORYINFO meminfo_t;
-
 int main(int argc, char **argv)
 {
 	struct arg_file *wfile = arg_file1("w", NULL, NULL, "water file");
@@ -83,10 +73,7 @@ int main(int argc, char **argv)
 	double gsp[3], mrg[3];
 	int spd[3];
 	box_t b;
-	grid_t g;
 	jvxl_box_t bj;
-	walltime_t t0;
-	double *u0;
 	int err, i, j, k;
 	eqoz_t eq;
 	double tol, *tuv, *cuv, td[10], *mx, *lvl, th;
@@ -94,16 +81,19 @@ int main(int argc, char **argv)
 	musc_t *musc;
 	closure_c_t *closure_c;
 	char prefix[20], filename[40];
-	meminfo_t ms, mn;
 
 	int nit, flag, nprefix;
+
+	cuv = tuv = NULL;
+	null_water(&w);
+	null_mol(&m);
+	null_eqoz(&eq);
 
 	if (arg_nullcheck(argtable) != 0)
 	{
 		/* NULL entries were detected, some allocations must have failed */
 		printf("%s: insufficient memory\n", progname);
-		exitcode = 1;
-		goto exit1;
+		exit(1);
 	}
 	/* set any command line default values prior to parsing */
 	closure->sval[0] = "PLHNC";
@@ -194,7 +184,7 @@ int main(int argc, char **argv)
 	if (waterread(wfile->filename[0], &w)) {
 		printf("Cannot read water data from file '%s'\n", wfile->filename[0]);
 		exitcode = 3;
-		goto exit2;
+		goto exit1;
 	}
 	/* Water force constants from Kovalenko */
 	/*
@@ -204,118 +194,20 @@ int main(int argc, char **argv)
 	w.e[1] = 0.152;
 	w.m.t = 298.0 * (1.380658e-23 * 6.0221367e+23) / 4184;
 	*/
-	eq.solv.natv = w.natom;
-	eq.solv.charge = calloc(3 * w.natom, sizeof(double));
-	eq.solv.charge_sp = eq.solv.charge + w.natom;
-	eq.solv.symc = eq.solv.charge_sp + w.natom;
-	eq.solv.charge[0] = w.m.q_h;
-	eq.solv.charge[1] = -2.0 * w.m.q_h;
-	eq.solv.charge_sp[0] = 0.0;
-	eq.solv.charge_sp[1] = 0.0;
-	eq.solv.symc[0] = sqrt(w.n[0]);
-	eq.solv.symc[1] = sqrt(w.n[1]);
 
 	mkbox(gsp, mrg, &m, &b);
 	printf(" BOX                X        Y        Z\n");
 	printf("  L:         %8.2lf %8.2lf %8.2lf\n", b.l[0], b.l[1], b.l[2]);
 	printf("  N:         %8d %8d %8d\n", b.n[0], b.n[1], b.n[2]);
 	printf("\n");
-	t0 = walltime();
-	if (ginit(&b, &g)) {
-		printf(" GINIT : insufficient memory\n");
-		exitcode = 4;
-		goto exit3;
-	}
-
-	eq.grid = &g;
-	t0 = walltime() - t0;
-
-	ms.c = (3 * g.na + 3 * g.nk + 2 * g.nr + w.natom * g.nr + 6 * m.natom) * sizeof(double) + g.nk * (sizeof(int) + sizeof(float));
-	mn.c = ms.c + (g.na + 4 * g.nk + 3 * w.ngrid) * sizeof(double);
-	ms.nr = (4 * sizeof(double) + 3 * sizeof(float)) * g.nr * w.natom;
-	mn.nr = ms.nr + ms.c;
-	ms.eq = (2 * g.nk + g.nr) * sizeof(double) * w.natom;
-	mn.eq = mn.nr + ms.eq;
-	ms.lsolv = 5 * g.nr * sizeof(float) * w.natom;
-	mn.lsolv = mn.nr + ms.lsolv;
-	ms.jx = 2 * g.nk * sizeof(float) * w.natom;
-	mn.jx = mn.lsolv + ms.jx;
-	printf(" MEMORY            self, B       net, B\n");
-	printf("  constants   %12ld %12ld\n", ms.c, mn.c);
-	printf("   NR         %12ld %12ld\n", ms.nr, mn.nr);
-	printf("    EQ        %12ld %12ld\n", ms.eq, mn.eq);
-	printf("    BiCGStab  %12ld %12ld\n", ms.lsolv, mn.lsolv);
-	printf("     Jx       %12ld %12ld\n", ms.jx, mn.jx);
-	printf("\n");
-
-	printf(" GINIT : Elapse %.2lf second(s)\n", t0 * 1e-6);
-
-	eq.solv.lxvva = g.na;
-	eq.solv.indga = (unsigned int *) g.ia;
-	eq.solv.xvva = (double *) calloc(3 * g.na, sizeof(double));
-	if (!eq.solv.xvva) {
-		printf("%s: insufficient memory\n", progname);
-		exitcode = 4;
-		goto exit3;
-	}
-	t0 = walltime();
-	err = mkxvva(&g, &w, eq.solv.xvva);
-	free(g.a);
-	free(w.xvv);
-	if (err == 1) {
-		printf(" MKXVVA: solvent functions are too short\n");
-		exitcode = 5;
-	} else if (err == 2) {
-		printf(" MKXVVA: insufficient memory\n");
-		exitcode = 4;
-	}
-	if (err) {
-		free(g.v2);
-		goto exit4;
-	}
-	printf(" MKXVVA: Elapse %.2lf second(s)\n", (walltime() - t0) * 1e-6);
 
 	molcenter(&b, &m);
 
-	eq.rism.uuv = calloc(w.natom * g.nr + 2 * (g.nr + g.nk + w.natom), sizeof(double));
-	if (!eq.rism.uuv) {
-		printf("%s: insufficient memory\n", progname);
-		exitcode = 4;
-		goto exit4;
+	// TODO: check exit code and raise exception
+	if (mk_eqoz(&eq, &b, &w, &m, ljcut->dval[0], ccut->dval[0], spd, th)) {
+		exitcode = 5;
+		goto exit1;
 	}
-	u0 = (double *) calloc(g.nr, sizeof(double));
-	if (!u0) {
-		printf("%s: insufficient memory\n", progname);
-		exitcode = 4;
-		goto exit5;
-	}
-
-	t0 = walltime();
-	memset(eq.rism.uuv, 0, w.natom * g.nr * sizeof(double));
-	uljuv(&g, &w, &m, ljcut->dval[0], eq.rism.uuv);
-	printf(" ULJUV : Elapse %.2lf second(s)\n", (walltime() - t0) * 1e-6);
-
-	t0 = walltime();
-	ucolu(&g, &w, &m, spd, ccut->dval[0], u0);
-	ucoluv(&w, g.nr, u0, eq.rism.uuv);
-	printf(" UCOLUV: Elapse %.2lf second(s)\n", (walltime() - t0) * 1e-6);
-
-	t0 = walltime();
-	eq.rism.asymcr = eq.rism.uuv + w.natom * g.nr;
-	eq.rism.asymhr = eq.rism.asymcr + g.nr;
-	asympr(&g, &w, &m, u0, th, eq.rism.asymcr, eq.rism.asymhr);
-	printf(" ASYMPR: Elapse %.2lf second(s)\n", (walltime() - t0) * 1e-6);
-
-	t0 = walltime();
-	eq.rism.asymck = eq.rism.asymhr + g.nr;
-	eq.rism.asymhk = eq.rism.asymck + g.nk;
-	eq.rism.huvk0 = eq.rism.asymhk + g.nk;
-	asympk(&g, &w, &m, th, eq.rism.asymck, eq.rism.asymhk, eq.rism.huvk0);
-	printf(" ASYMPK: Elapse %.2lf second(s)\n", (walltime() - t0) * 1e-6);
-	printf("\n");
-
-	free(u0);
-	free(g.v2);
 
 	/*
 	if (pfile->count) {
@@ -328,15 +220,15 @@ int main(int argc, char **argv)
 		fclose(f);
 	}
 	*/
-	tuv = (double *) calloc(g.nr * w.natom, sizeof(double));
+	tuv = (double *) calloc(eq.grid.nr * w.natom, sizeof(double));
 	if (!tuv) {
 		printf("%s: insufficient memory\n", progname);
 		exitcode = 4;
-		goto exit5;
+		goto exit1;
 	}
 	i = 0;
 	for (j = 0; j < w.natom; ++j)
-		for (k = 0; k < g.nr; ++k)
+		for (k = 0; k < eq.grid.nr; ++k)
 			tuv[i++] = eq.rism.asymcr[k] * eq.solv.charge[j];
 
 	tol = prec->dval[0];
@@ -349,39 +241,39 @@ int main(int argc, char **argv)
 		else if (flag == 2)
 			printf("NR: no convergence of armigo.\n");
 
-		goto exit6;
+		goto exit1;
 	}
 	printf("\n");
 
-	cuv = (double *) calloc(g.nr * w.natom, sizeof(double));
+	cuv = (double *) calloc(eq.grid.nr * w.natom, sizeof(double));
 	if (!cuv) {
 		printf("%s: insufficient memory\n", progname);
-		exitcode = 4;
-		goto exit6;
+		exitcode = 1;
+		goto exit1;
 	}
-	closure_c(g.nr * w.natom, eq.rism.uuv, tuv, cuv);
+	closure_c(eq.grid.nr * w.natom, eq.rism.uuv, tuv, cuv);
 
-	cblas_daxpy(g.nr * w.natom, 1.0, cuv, 1, tuv, 1);
+	cblas_daxpy(eq.grid.nr * w.natom, 1.0, cuv, 1, tuv, 1);
 
 	strcpy(filename, prefix);
 	strcpy(filename + nprefix, "_huv.rbin");
 	f = fopen(filename, "wb");
-	fwrite(&g.nr, sizeof(int), 1, f);
+	fwrite(&eq.grid.nr, sizeof(int), 1, f);
 	fwrite(&w.natom, sizeof(int), 1, f);
-	fwrite(tuv, sizeof(double), g.nr * w.natom, f);
+	fwrite(tuv, sizeof(double), eq.grid.nr * w.natom, f);
 	fclose(f);
 	strcpy(filename, prefix);
 	strcpy(filename + nprefix, "_cuv.rbin");
 	f = fopen(filename, "wb");
-	fwrite(&g.nr, sizeof(int), 1, f);
+	fwrite(&eq.grid.nr, sizeof(int), 1, f);
 	fwrite(&w.natom, sizeof(int), 1, f);
-	fwrite(cuv, sizeof(double), g.nr * w.natom, f);
+	fwrite(cuv, sizeof(double), eq.grid.nr * w.natom, f);
 	fclose(f);
 
-	td[0] = etot(&g, &w, eq.rism.uuv, tuv, cuv);
-	td[1] = (*musc)(&g, &w, eq.rism.uuv, tuv, cuv);
-	td[2] = mugf(&g, &w, eq.rism.uuv, tuv, cuv);
-	td[3] = ichi(&g, &w, eq.rism.uuv, tuv, cuv);
+	td[0] = etot(&eq.grid, &w, eq.rism.uuv, tuv, cuv);
+	td[1] = (*musc)(&eq.grid, &w, eq.rism.uuv, tuv, cuv);
+	td[2] = mugf(&eq.grid, &w, eq.rism.uuv, tuv, cuv);
+	td[3] = ichi(&eq.grid, &w, eq.rism.uuv, tuv, cuv);
 	printf("xene = %.3lf musc = %.3lf mugf = %.3lf pmv = %.3lf\n", td[0], td[1], td[2], td[3]);
 
 	free(cuv);
@@ -393,7 +285,7 @@ int main(int argc, char **argv)
 		if (!lvl) {
 			printf("%s: insufficient memory\n", progname);
 			exitcode = 4;
-			goto exit6;
+			goto exit1;
 		}
 		mx = lvl + w.natom;
 		memset(bj.s, 0, 9 * sizeof(double));
@@ -407,7 +299,7 @@ int main(int argc, char **argv)
 			tuv[k] += 1.0;
 			mx[j] = tuv[k];
 			++k;
-			for (i = 1; i < g.nr; ++i) {
+			for (i = 1; i < eq.grid.nr; ++i) {
 				tuv[k] += 1.0;
 				if (tuv[k] > mx[j])
 					mx[j] = tuv[k];
@@ -430,19 +322,11 @@ int main(int argc, char **argv)
 		}
 		free(lvl);
 	}
-exit6:
-	free(tuv);
-exit5:
-	free(eq.rism.uuv);
-exit4:
-	free(eq.solv.xvva);
-	free(g.ia);
-exit3:
-	free(eq.solv.charge);
-	/*free(w.xvv);*/
-exit2:
-	free(m.x);
 exit1:
+	free(tuv);
+	rm_eqoz(&eq);
+	rm_water(&w);
+	rm_mol(&m);
 	arg_freetable(argtable, sizeof(argtable) / sizeof(argtable[0])); 
 	exit(exitcode);
 }

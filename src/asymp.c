@@ -131,7 +131,7 @@ void asympr(const grid_t *g, const water_t *w, const mol_t *m, const double *u, 
 	}
 }
 
-void asympk(const grid_t *g, const water_t *w, const mol_t *m, double th, double *asympck, double *asymphk, double *huvk0)
+void asympk(const wvec_t *wvec, const water_t *w, const mol_t *m, double th, double *asympck, double *asymphk, double *huvk0)
 {
 	int i, k, l;
 	double p, sumsin, sumcos, pc, ph, a;
@@ -141,7 +141,7 @@ void asympk(const grid_t *g, const water_t *w, const mol_t *m, double th, double
 	xappa = 0.0;
 	smear2_4 = 0.25 * smear * smear;
 	xappa2 = xappa * xappa;
-	a = 4.0 * M_PI * 18.2223 * 18.2223 / (w->m.t * g->l[0] * g->l[1] * g->l[2]);
+	a = 4.0 * M_PI * 18.2223 * 18.2223 / (w->m.t * wvec->volume);
 	
 	phase = (double *) calloc(3 * m->natom, sizeof(double));
 	sinp = phase + m->natom;
@@ -149,14 +149,14 @@ void asympk(const grid_t *g, const water_t *w, const mol_t *m, double th, double
 
 	l = 2;
 	i = 3;
-	for (k = 1; k < g->nk2; ++k) {
+	for (k = 1; k < wvec->nk2; ++k) {
 		/*l = 3 * k;
 		for (i = 0; i < m->natom; ++i)
 			phase[i] = g->v[l] * m->x[i] + g->v[l + 1] * m->y[i] + g->v[l + 2] * m->z[i];
 		*/
-		p = a * exp(-smear2_4 * g->v2[k]);
-		pc = p / g->v2[k];
-		ph = M_1_2PI2 * p / (g->v2[k] + xappa2);
+		p = a * exp(-smear2_4 * wvec->v2[k]);
+		pc = p / wvec->v2[k];
+		ph = M_1_2PI2 * p / (wvec->v2[k] + xappa2);
 
 		if (pc < th && ph < th) {
 			sumcos = 1.0;
@@ -164,9 +164,9 @@ void asympk(const grid_t *g, const water_t *w, const mol_t *m, double th, double
 			i += 3;
 		} else {
 			cblas_dcopy(m->natom, m->x, 1, phase, 1);
-			cblas_dscal(m->natom, g->v[i++], phase, 1);
-			cblas_daxpy(m->natom, g->v[i++], m->y, 1, phase, 1);
-			cblas_daxpy(m->natom, g->v[i++], m->z, 1, phase, 1);
+			cblas_dscal(m->natom, wvec->v[i++], phase, 1);
+			cblas_daxpy(m->natom, wvec->v[i++], m->y, 1, phase, 1);
+			cblas_daxpy(m->natom, wvec->v[i++], m->z, 1, phase, 1);
 
 			vec_sincos(m->natom, phase, sinp, cosp);
 
@@ -186,9 +186,9 @@ void asympk(const grid_t *g, const water_t *w, const mol_t *m, double th, double
 	asymphk[1] = 0.0;
 
 	cblas_dcopy(m->natom, m->x, 1, phase, 1);
-	cblas_dscal(m->natom, g->v[0], phase, 1);
-	cblas_daxpy(m->natom, g->v[1], m->y, 1, phase, 1);
-	cblas_daxpy(m->natom, g->v[2], m->z, 1, phase, 1);
+	cblas_dscal(m->natom, wvec->v[0], phase, 1);
+	cblas_daxpy(m->natom, wvec->v[1], m->y, 1, phase, 1);
+	cblas_daxpy(m->natom, wvec->v[2], m->z, 1, phase, 1);
 
 	vec_sincos(m->natom, phase, sinp, cosp);
 

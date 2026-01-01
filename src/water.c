@@ -105,7 +105,7 @@ int waterread(const char *fn, water_t *w)
 		free(hv);
 		return 2;
 	}
-	w->xvv = (double *) calloc(3 * (w->ngrid + 1), sizeof(double));
+	w->xvv = (double *) malloc(3 * (w->ngrid + 1) * sizeof(double));
 	if (!w->xvv) {
 		free(hv);
 		return 4;
@@ -145,28 +145,38 @@ int waterread(const char *fn, water_t *w)
 	return 0;
 }
 
-int mkxvva(const grid_t *g, const water_t *w, double *xvva)
+void null_water(water_t *w)
+{
+	w->xvv = NULL;
+}
+
+void rm_water(water_t *w)
+{
+	free(w->xvv);
+}
+
+int mkxvva(const wvec_t *wvec, const water_t *w, double *xvva)
 {
 	double *cs, *t;
 	int ng, i, j;
 
-	if (g->a[g->na - 1] > (M_PI / w->dr))
+	if (wvec->a[wvec->na - 1] > (M_PI / w->dr))
 		return 1;
 
 	/* dt = M_PI / (w->ngrid * w->dr); */
 	ng = w->ngrid + 1;
-	t = (double *) calloc(g->na + 4 * (ng - 1), sizeof(double));
+	t = (double *) calloc(wvec->na + 4 * (ng - 1), sizeof(double));
 	if (!t)
 		return 2;
 
-	cs = t + g->na;
-	for (i = 0; i < g->na; ++i)
-		t[i] = g->a[i] / w->dt;
+	cs = t + wvec->na;
+	for (i = 0; i < wvec->na; ++i)
+		t[i] = wvec->a[i] / w->dt;
 	/* spline interpolation */
 	i = 0;
 	for (j = 0; j < 3; ++j) {
 		cubicuni(ng, w->xvv + j * ng, cs, FDERIV, 0.0, SDERIV, 0.0);
-		resample(ng-1, cs, g->na, t, xvva + j * g->na);
+		resample(ng-1, cs, wvec->na, t, xvva + j * wvec->na);
 	}
 	free(t);
 
