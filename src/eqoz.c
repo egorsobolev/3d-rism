@@ -132,8 +132,8 @@ int mk_rism(rism_t *rism, grid_t *g, wvec_t *wvec, water_t *water, mol_t *mol,
 	 uuv: double[natv * nr]
 	 asymcr: double[nr]
 	 asymhr: double[nr]
-	 asymck: double[nk]
-	 asymhk: double[nk]
+	 asymck: complex double[nk2] (or double[nk])
+	 asymhk: complex double[nk2] (or double[nk])
 	 huvk0: double[2 * natv]
 	 */
 
