@@ -5,10 +5,10 @@
 #include <time.h>
 #include <memory.h>
 #include <string.h>
+#include <omp.h>
 
 #define _USE_MATH_DEFINES
 #include <math.h>
-#include <cblas.h>
 #include <fft.h>
 
 #include "mol.h"
@@ -136,8 +136,8 @@ int main(int argc, char **argv)
 		goto exit1;
 	}
 
-	openblas_set_num_threads(nthr->ival[0]);
 	cpocketfft_set_num_threads(nthr->ival[0]);
+	omp_set_num_threads(nthr->ival[0]);
 
 	nprefix = (int) (rtxt->extension[0] - rtxt->basename[0]);
 	if (nprefix > 19) nprefix = 19;
@@ -260,7 +260,9 @@ int main(int argc, char **argv)
 	}
 	closure_c(eq.grid.nr * w.natom, eq.rism.uuv, tuv, cuv);
 
-	cblas_daxpy(eq.grid.nr * w.natom, 1.0, cuv, 1, tuv, 1);
+	for (i = 0; i < eq.grid.nr * w.natom; i++) {
+		tuv[i] += cuv[i];
+	}
 
 	strcpy(filename, prefix);
 	strcpy(filename + nprefix, "_huv.rbin");
