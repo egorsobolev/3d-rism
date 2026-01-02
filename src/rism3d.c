@@ -5,6 +5,7 @@
 #include <time.h>
 #include <memory.h>
 #include <string.h>
+#include <omp.h>
 
 #define _USE_MATH_DEFINES
 #include <math.h>
@@ -138,6 +139,7 @@ int main(int argc, char **argv)
 
 	openblas_set_num_threads(nthr->ival[0]);
 	cpocketfft_set_num_threads(nthr->ival[0]);
+	omp_set_num_threads(nthr->ival[0]);
 
 	nprefix = (int) (rtxt->extension[0] - rtxt->basename[0]);
 	if (nprefix > 19) nprefix = 19;
