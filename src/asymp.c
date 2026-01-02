@@ -4,7 +4,6 @@
 
 #define _USE_MATH_DEFINES
 #include <math.h>
-#include <cblas.h>
 
 #define RCOR		(0.002)
 #define M_4PI		(4.0 * M_PI)
@@ -133,22 +132,16 @@ void asympr(const grid_t *g, const water_t *w, const mol_t *m, const double *u, 
 
 void asympk(const wvec_t *wvec, const water_t *w, const mol_t *m, double th, double *asympck, double *asymphk, double *huvk0)
 {
-	int i, k, l;
-	double p, sumsin, sumcos, pc, ph, a;
+	int i, j, k, l;
+	double p, sumsin, sumcos, pc, ph, a, phase_i;
 	double smear, xappa, smear2_4, xappa2;
-	double *phase, *sinp, *cosp;
 	smear = 1.0;
 	xappa = 0.0;
 	smear2_4 = 0.25 * smear * smear;
 	xappa2 = xappa * xappa;
 	a = 4.0 * M_PI * 18.2223 * 18.2223 / (w->m.t * wvec->volume);
-	
-	phase = (double *) calloc(3 * m->natom, sizeof(double));
-	sinp = phase + m->natom;
-	cosp = sinp + m->natom;
 
-	l = 2;
-	i = 3;
+	#pragma omp parallel for private(l, p, pc, ph, phase_i, sumcos, sumsin)
 	for (k = 1; k < wvec->nk2; ++k) {
 		/*l = 3 * k;
 		for (i = 0; i < m->natom; ++i)
@@ -161,46 +154,42 @@ void asympk(const wvec_t *wvec, const water_t *w, const mol_t *m, double th, dou
 		if (pc < th && ph < th) {
 			sumcos = 1.0;
 			sumsin = 0.0;
-			i += 3;
 		} else {
-			cblas_dcopy(m->natom, m->x, 1, phase, 1);
-			cblas_dscal(m->natom, wvec->v[i++], phase, 1);
-			cblas_daxpy(m->natom, wvec->v[i++], m->y, 1, phase, 1);
-			cblas_daxpy(m->natom, wvec->v[i++], m->z, 1, phase, 1);
-
-			vec_sincos(m->natom, phase, sinp, cosp);
-
-			sumcos = cblas_ddot(m->natom, cosp, 1, m->q, 1);
-			sumsin = cblas_ddot(m->natom, sinp, 1, m->q, 1);
+			sumcos = sumsin = 0.0;
+			l = 3 * k;
+			for (i = 0; i < m->natom; i++) {
+				phase_i = wvec->v[l] * m->x[i] +
+				          wvec->v[l + 1] * m->y[i] +
+				          wvec->v[l + 2] * m->z[i];
+				sumcos += cos(phase_i) * m->q[i];
+				sumsin += sin(phase_i) * m->q[i];
+			}
 		}
+		l = 2 * k;
 		asympck[l] = pc * sumcos;
 		asymphk[l] = ph * sumcos;
-		++l;
-		asympck[l] = pc * sumsin;
-		asymphk[l] = ph * sumsin;
-		++l;
+		asympck[l + 1] = pc * sumsin;
+		asymphk[l + 1] = ph * sumsin;
 	}
 	asympck[0] = 0.0;
 	asympck[1] = 0.0;
 	asymphk[0] = 0.0;
 	asymphk[1] = 0.0;
-
-	cblas_dcopy(m->natom, m->x, 1, phase, 1);
-	cblas_dscal(m->natom, wvec->v[0], phase, 1);
-	cblas_daxpy(m->natom, wvec->v[1], m->y, 1, phase, 1);
-	cblas_daxpy(m->natom, wvec->v[2], m->z, 1, phase, 1);
-
-	vec_sincos(m->natom, phase, sinp, cosp);
-
-	sumcos = cblas_ddot(m->natom, cosp, 1, m->q, 1);
-	sumsin = cblas_ddot(m->natom, sinp, 1, m->q, 1);
-
+	/*
+	sumcos = sumsin = 0.0;
+	for (i = 0; i < m->natom; i++) {
+		phase_j = wvec->v[0] * m->x[i] +
+		          wvec->v[1] * m->y[i] +
+		          wvec->v[2] * m->z[i];
+		sumcos += cos(phase_i) * m->q[i];
+		sumsin += sin(phase_i) * m->q[i];
+	}
+	*/
 	l = 0;
 	for (i = 0; i < w->natom; ++i) {
 		huvk0[l++] = 0.0;
 		huvk0[l++] = 0.0;
 	}
-	free(phase);
 }
 
 void polint(double xa[], double ya[], int n, double x, double *y, double *dy)
