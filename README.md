@@ -9,7 +9,6 @@ DOI: [10.1021/jp971083h](https://pubs.acs.org/doi/10.1021/jp971083h)
 
 ### Dependencies
 
-* [OpenBLAS](https://github.com/OpenMathLib/OpenBLAS)
 * [pocketfft](https://gitlab.mpcdf.mpg.de/mtr/pocketfft)
 * [cpocketfft](https://github.com/egorsobolev/cpocketfft)
 * [argtable2](https://argtable.sourceforge.io/)
