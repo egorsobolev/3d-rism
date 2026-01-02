@@ -365,10 +365,9 @@ void rm_eqoz(eqoz_t *eq)
 	rm_solv(&eq->solv);
 }
 
-
 void eqoz(eqoz_t *eq, double *tuv, double *d, float *f)
 {
-	int i, j, k, l, n, m;
+	int i, j, k, l, n, m, jnk, knk;
 	double *r, *t, *s, *b, a;
 	size_t nk, nr, natv;
 
@@ -408,23 +407,23 @@ void eqoz(eqoz_t *eq, double *tuv, double *d, float *f)
 	#pragma omp for
 	for (i = 0; i < m; i++)
 		s[i] = 0;
-	l = 0;
-	for (j = 0; j < m; j += nk) {
+	for (j = 0; j < natv; j++) {
+		jnk = j * nk;
+		l = j * (j + 1) / 2;
 		/* side elemnts */
-		for (k = 0; k < j; k += nk) {
-			#pragma omp for
+		#pragma omp for collapse(2)
+		for (k = 0; k < j; k++)
 			for (i = 0; i < nk; ++i) {
-				a = eq->solv.xvva[eq->solv.indga[i / 2] + l];
-				s[j + i] += a * t[k + i];
-				s[k + i] += a * t[j + i];
+				knk = k * nk;
+				a = eq->solv.xvva[eq->solv.indga[i / 2] + (l + k) * eq->solv.lxvva];
+				s[jnk + i] += a * t[knk + i];
+				s[knk + i] += a * t[jnk + i];
 			}
-			l += eq->solv.lxvva;
-		}
 		/* diagonal elements */
+		l = (l + j) * eq->solv.lxvva;
 		#pragma omp for
 		for (i = 0; i < nk; ++i)
-			s[j + i] += t[j + i] * eq->solv.xvva[eq->solv.indga[i / 2] + l];
-		l += eq->solv.lxvva;
+			s[jnk + i] += t[jnk + i] * eq->solv.xvva[eq->solv.indga[i / 2] + l];
 	}
 	/*
 	 * s(1:2,:)=s(1:2,:)+rism.huvk0(1:2,:);
@@ -461,12 +460,10 @@ void eqoz(eqoz_t *eq, double *tuv, double *d, float *f)
 		}
 }
 
-
-/* + 2 * n * sizeof(float) */
 void Jx(lneq_t *eq, float *x, float *r)
 {
 	float *d, *t, *b, a;
-	int i, j, k, l;
+	int i, j, k, l, jnk, knk;
 	int n, m;
 	size_t nk, nr;
 
@@ -493,23 +490,24 @@ void Jx(lneq_t *eq, float *x, float *r)
 		d[i] *= eq->symc[i / nk];
 		t[i] = 0;
 	}
-	l = 0;
-	for (j = 0; j < m; j += nk) {
+	for (j = 0; j < eq->natv; j++) {
+		jnk = j * nk;
+		l = j * (j + 1) / 2;
 		/* side elemnts */
-		for (k = 0; k < j; k += nk) {
-			#pragma omp for
+		#pragma omp for collapse(2)
+		for (k = 0; k < j; k ++) {
 			for (i = 0; i < nk; ++i) {
-				a = (float) eq->xvva[eq->indga[i / 2] + l];
-				t[j + i] += a * d[k + i];
-				t[k + i] += a * d[j + i];
+				knk = k * nk;
+				a = (float) eq->xvva[eq->indga[i / 2] + (l + k) * eq->lxvva];
+				t[jnk + i] += a * d[knk + i];
+				t[knk + i] += a * d[jnk + i];
 			}
-			l += eq->lxvva;
 		}
 		/* diagonal elements */
+		l = (l + j) * eq->lxvva;
 		#pragma omp for
 		for (i = 0; i < nk; ++i)
-			t[j + i] += d[j + i] * (float) eq->xvva[eq->indga[i / 2] + l];
-		l += eq->lxvva;
+			t[jnk + i] += d[jnk + i] * (float) eq->xvva[eq->indga[i / 2] + l];
 	}
 	#pragma omp for
 	for (i = 0; i < m; i++)
